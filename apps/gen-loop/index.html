@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Driven Drug Design Pipeline</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #fafbfc;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 56px 40px 48px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  header h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #1a1a2e;
+    margin-bottom: 10px;
+  }
+  header p {
+    font-size: 15px;
+    color: #5a6178;
+    max-width: 620px;
+    margin: 0 auto;
+    line-height: 1.65;
+  }
+  .coming-soon-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 18px;
+    padding: 9px 18px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #5b3fd6;
+    border: 1px solid rgba(124,92,252,0.45);
+    border-radius: 999px;
+    background: rgba(124,92,252,0.08);
+    box-shadow: 0 2px 10px rgba(124,92,252,0.12);
+  }
+  .coming-soon-note .cs-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #fff;
+    background: #7c5cfc;
+    padding: 3px 9px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+
+  /* ── Pipeline steps ── */
+  .pipeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 48px;
+  }
+
+  /* Vertical connector line */
+  .pipeline::before {
+    content: '';
+    position: absolute;
+    left: 39px;
+    top: 40px;
+    bottom: 40px;
+    width: 2px;
+    background: linear-gradient(to bottom, #7c5cfc, #3b82f6, #10b981, #f59e0b, #ef4444, #7c5cfc);
+    border-radius: 1px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0;
+    position: relative;
+    padding: 20px 0;
+  }
+
+  .step-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .step-content {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 22px 26px;
+    transition: box-shadow 0.2s;
+  }
+  .step-content:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+
+  .step-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .step-name {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .step-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  .step-body {
+    font-size: 13.5px;
+    color: #4b5563;
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+
+  .step-detail {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .detail-chip {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid;
+  }
+
+  /* Feedback arrow */
+  .feedback-arrow {
+    position: absolute;
+    right: -48px;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Step colors */
+  .step.s1 .step-dot { background: #7c5cfc; }
+  .step.s1 .step-name { color: #7c5cfc; }
+  .step.s1 .detail-chip { color: #7c5cfc; border-color: rgba(124,92,252,0.25); background: rgba(124,92,252,0.05); }
+
+  .step.s2 .step-dot { background: #3b82f6; }
+  .step.s2 .step-name { color: #3b82f6; }
+  .step.s2 .detail-chip { color: #3b82f6; border-color: rgba(59,130,246,0.25); background: rgba(59,130,246,0.05); }
+
+  .step.s3 .step-dot { background: #10b981; }
+  .step.s3 .step-name { color: #10b981; }
+  .step.s3 .detail-chip { color: #10b981; border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.05); }
+
+  .step.s4 .step-dot { background: #f59e0b; }
+  .step.s4 .step-name { color: #b45309; }
+  .step.s4 .detail-chip { color: #b45309; border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.05); }
+
+  .step.s5 .step-dot { background: #ef4444; }
+  .step.s5 .step-name { color: #ef4444; }
+  .step.s5 .detail-chip { color: #ef4444; border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.05); }
+
+  .step.s6 .step-dot { background: #7c5cfc; }
+  .step.s6 .step-name { color: #7c5cfc; }
+  .step.s6 .detail-chip { color: #7c5cfc; border-color: rgba(124,92,252,0.25); background: rgba(124,92,252,0.05); }
+
+  /* ── Feedback loop callout ── */
+  .loop-callout {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 8px 0 40px 80px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e0e2ec;
+    background: #fff;
+  }
+  .loop-bar {
+    width: 5px;
+    background: linear-gradient(to bottom, #ef4444, #7c5cfc);
+    flex-shrink: 0;
+  }
+  .loop-body {
+    padding: 16px 20px;
+  }
+  .loop-body strong {
+    font-size: 13px;
+    color: #1a1a2e;
+  }
+  .loop-body p {
+    font-size: 12.5px;
+    color: #5a6178;
+    line-height: 1.6;
+    margin-top: 4px;
+  }
+
+  /* ── Human + AI section ── */
+  .collab {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+  .collab-card {
+    padding: 28px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+  }
+  .collab-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .collab-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .collab-card li {
+    font-size: 13px;
+    color: #4b5563;
+    padding: 5px 0;
+    padding-left: 18px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .collab-card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .card-human h3 { color: #1a1a2e; }
+  .card-human li::before { background: #7c5cfc; }
+  .card-ai h3 { color: #1a1a2e; }
+  .card-ai li::before { background: #3b82f6; }
+
+  /* ── Agent roster ── */
+  .agents {
+    margin-bottom: 48px;
+  }
+  .agents h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1a1a2e;
+  }
+  .agents .subtitle {
+    font-size: 13px;
+    color: #5a6178;
+    margin-bottom: 18px;
+  }
+  .agent-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .agent {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+  }
+  .agent-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .agent:nth-child(1) .agent-icon { background: #7c5cfc; }
+  .agent:nth-child(2) .agent-icon { background: #3b82f6; }
+  .agent:nth-child(3) .agent-icon { background: #10b981; }
+  .agent:nth-child(4) .agent-icon { background: #f59e0b; }
+  .agent:nth-child(5) .agent-icon { background: #ef4444; }
+  .agent:nth-child(6) .agent-icon { background: #6366f1; }
+  .agent-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 2px;
+  }
+  .agent-desc {
+    font-size: 11.5px;
+    color: #6b7280;
+    line-height: 1.45;
+  }
+
+  /* ── Stats strip ── */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 28px 0;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 40px;
+  }
+  .sstat {
+    text-align: center;
+  }
+  .sstat-num {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+  .sstat-label {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding-top: 16px;
+  }
+  footer p {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header>
+    <h1>AI-Driven Drug Design Pipeline</h1>
+    <p>An autonomous multi-agent system for molecular generation, scoring,
+       and optimization &mdash; with a human medicinal chemist driving strategy
+       at every design cycle.</p>
+    <div class="coming-soon-note"><span class="cs-badge">Coming soon</span><span>Approach schematic &mdash; an interactive view of a live campaign is coming soon.</span></div>
+  </header>
+
+  <!-- ── Stats ── -->
+  <div class="stats-strip">
+    <div class="sstat">
+      <div class="sstat-num">6</div>
+      <div class="sstat-label">AI agents</div>
+    </div>
+    <div class="sstat">
+      <div class="sstat-num">6-axis</div>
+      <div class="sstat-label">MPO scoring</div>
+    </div>
+    <div class="sstat">
+      <div class="sstat-num">24/7</div>
+      <div class="sstat-label">Autonomous generation</div>
+    </div>
+    <div class="sstat">
+      <div class="sstat-num">Closed-loop</div>
+      <div class="sstat-label">Human-in-the-loop</div>
+    </div>
+  </div>
+
+  <!-- ── Pipeline ── -->
+  <div class="pipeline">
+
+    <div class="step s1">
+      <div class="step-marker"><div class="step-dot">1</div></div>
+      <div class="step-content">
+        <div class="step-header">
+          <div class="step-name">Design Strategy</div>
+          <div class="step-tag">Human + AI</div>
+        </div>
+        <div class="step-body">
+          The human expert defines the design objectives and which molecular vectors
+          to explore. The AI team lead translates these into reward functions, hard
+          gates, and structural filters for the generative model.
+        </div>
+      </div>
+    </div>
+
+    <div class="step s2">
+      <div class="step-marker"><div class="step-dot">2</div></div>
+      <div class="step-content">
+        <div class="step-header">
+          <div class="step-name">Generate Molecules</div>
+          <div class="step-tag">GPU Cluster</div>
+        </div>
+        <div class="step-body">
+          REINVENT runs reinforcement learning on a GPU cluster, generating large
+          batches of candidates each iteration under multi-objective optimization,
+          constrained by structural filters and property gates.
+        </div>
+      </div>
+    </div>
+
+    <div class="step s3">
+      <div class="step-marker"><div class="step-dot">3</div></div>
+      <div class="step-content">
+        <div class="step-header">
+          <div class="step-name">Predict Properties</div>
+          <div class="step-tag">ML Models</div>
+        </div>
+        <div class="step-body">
+          Every generated molecule is scored by ML models across several ADME and
+          potency axes. Multi-parameter optimization keeps the compounds that clear
+          most of the objectives at once.
+        </div>
+      </div>
+    </div>
+
+    <div class="step s4">
+      <div class="step-marker"><div class="step-dot">4</div></div>
+      <div class="step-content">
+        <div class="step-header">
+          <div class="step-name">Dock &amp; Validate</div>
+          <div class="step-tag">3D Structure</div>
+        </div>
+        <div class="step-body">
+          Top-scoring compounds are docked into the protein binding site and checked
+          for pose quality, strain, and fit to the target pharmacophore.
+        </div>
+      </div>
+    </div>
+
+    <div class="step s5">
+      <div class="step-marker"><div class="step-dot">5</div></div>
+      <div class="step-content">
+        <div class="step-header">
+          <div class="step-name">Expert Review</div>
+          <div class="step-tag">Human</div>
+        </div>
+        <div class="step-body">
+          The medicinal chemist reviews compounds in 3D &mdash; binding pose,
+          synthetic accessibility, and SAR &mdash; curates selections, and refines
+          the rules based on what the model is learning to make.
+        </div>
+      </div>
+    </div>
+
+    <div class="step s6">
+      <div class="step-marker"><div class="step-dot">6</div></div>
+      <div class="step-content">
+        <div class="step-header">
+          <div class="step-name">Learn &amp; Iterate</div>
+          <div class="step-tag">Closed loop</div>
+        </div>
+        <div class="step-body">
+          Each iteration&rsquo;s failures are diagnosed and turned into concrete
+          design changes, and the model warm-starts from the previous checkpoint,
+          carrying forward what it learned.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Feedback loop ── -->
+  <div class="loop-callout">
+    <div class="loop-bar"></div>
+    <div class="loop-body">
+      <strong>Iterative refinement, not one-shot prediction</strong>
+      <p>Across many design cycles, the system learns where simple scoring breaks
+         down, when to promote a soft objective to a hard constraint, and which
+         properties the scaffold itself locks in. Each lesson is found through
+         failure, diagnosed with the chemist, and encoded as a rule for future
+         iterations.</p>
+    </div>
+  </div>
+
+  <!-- ── Human vs AI roles ── -->
+  <div class="collab">
+    <div class="collab-card card-human">
+      <h3><span style="font-size:18px">&#x1F9D1;&#x200D;&#x1F52C;</span> Human Expert</h3>
+      <ul>
+        <li>Defines design objectives and binding hypotheses</li>
+        <li>Sets go/no-go decisions on scoring strategy</li>
+        <li>Reviews 3D poses and applies medicinal-chemistry judgment</li>
+        <li>Diagnoses model failures and proposes design changes</li>
+        <li>Curates final compound selections</li>
+      </ul>
+    </div>
+    <div class="collab-card card-ai">
+      <h3><span style="font-size:18px">&#x1F916;</span> AI Agent Team</h3>
+      <ul>
+        <li>Generates and scores molecules autonomously, around the clock</li>
+        <li>Runs property predictions on every compound</li>
+        <li>Manages docking and pose validation</li>
+        <li>Assembles curated selections for review</li>
+        <li>Maintains a decision log and lab notebook</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── Agent roster ── -->
+  <div class="agents">
+    <h2>Agent Team</h2>
+    <div class="subtitle">Six specialized agents running continuously, coordinated by a team lead</div>
+    <div class="agent-row">
+      <div class="agent">
+        <div class="agent-icon">G</div>
+        <div>
+          <div class="agent-name">Generator</div>
+          <div class="agent-desc">RL training on GPU, campaign management, checkpoint warm-starting</div>
+        </div>
+      </div>
+      <div class="agent">
+        <div class="agent-icon">A</div>
+        <div>
+          <div class="agent-name">Analyst</div>
+          <div class="agent-desc">Data consolidation, R-group decomposition, filtering, explorer assembly</div>
+        </div>
+      </div>
+      <div class="agent">
+        <div class="agent-icon">D</div>
+        <div>
+          <div class="agent-name">Docker</div>
+          <div class="agent-desc">Docking and virtual screening, pose validation, strain filtering</div>
+        </div>
+      </div>
+      <div class="agent">
+        <div class="agent-icon">S</div>
+        <div>
+          <div class="agent-name">Structure</div>
+          <div class="agent-desc">Co-folding protein&ndash;ligand prediction, affinity estimation, 3D analysis</div>
+        </div>
+      </div>
+      <div class="agent">
+        <div class="agent-icon">R</div>
+        <div>
+          <div class="agent-name">Archiver</div>
+          <div class="agent-desc">Lab notebook, Q&amp;A log, decision rationale, institutional memory</div>
+        </div>
+      </div>
+      <div class="agent">
+        <div class="agent-icon">L</div>
+        <div>
+          <div class="agent-name">Team Lead</div>
+          <div class="agent-desc">Coordinates all agents, thinks with the human expert, drives strategy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>AI-Driven Drug Design</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

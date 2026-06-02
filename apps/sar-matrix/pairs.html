@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAR R-group Pair Matrix — demo</title>
+<style>
+  :root { --accent:#5B4FCF; --ink:#1f2430; --mut:#64748b; --line:#e6e8ef; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         color:var(--ink); background:#fbfbfd; }
+  .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 60px; }
+  h1 { font-size:20px; margin:0 0 2px; letter-spacing:-.01em; }
+  .sub { color:var(--mut); font-size:13px; margin:0 0 16px; }
+  .realdata { display:inline-flex; align-items:center; gap:9px; margin:0 0 16px; padding:8px 14px; font-size:12.5px; line-height:1.4;
+              color:#3b3470; background:#f3f1fc; border:1px solid #d8d3f4; border-left:3px solid var(--accent); border-radius:9px; }
+  .realdata b { color:var(--accent); font-weight:650; }
+  .realdata .dot { flex:none; width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px #e3def8; }
+  .controls { display:flex; flex-wrap:wrap; gap:12px 18px; align-items:flex-end;
+              background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:14px; }
+  .ctl { display:flex; flex-direction:column; gap:3px; }
+  .ctl label { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--mut); font-weight:600; }
+  select, input { font:13px inherit; padding:5px 8px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink); }
+  input[type=number] { width:74px; }
+  .meta { color:var(--mut); font-size:12.5px; margin:0 0 10px; }
+  .meta b { color:var(--ink); font-weight:650; }
+  .mw { overflow:auto; max-height:74vh; border:1px solid var(--line); border-radius:12px; background:#fff; }
+  table { border-collapse:separate; border-spacing:0; font-size:11px; }
+  th,td { border-bottom:1px solid #f1f2f7; border-right:1px solid #f1f2f7; text-align:center; }
+  th.co { position:sticky; left:0; top:0; z-index:6; background:#f7f8fc; min-width:150px; padding:7px 9px;
+          font-size:10.5px; color:var(--mut); text-align:left; }
+  th.ch { position:sticky; top:0; z-index:4; background:#f7f8fc; padding:5px; min-width:78px; }
+  th.rh { position:sticky; left:0; z-index:3; background:#fff; padding:5px 7px; min-width:150px; }
+  td { padding:5px 6px; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
+  .pair-cell { display:flex; align-items:center; gap:4px; justify-content:flex-start; }
+  .vs { color:var(--mut); font-size:9px; font-style:italic; }
+  .tag-spr { margin-left:auto; background:#f5f3ff; color:#7c3aed; border-radius:5px; padding:1px 5px; font-size:9.5px; font-weight:700; }
+  .chip { display:inline-block; min-width:54px; padding:3px 6px; border:1px dashed #cbd2e0; border-radius:6px;
+          background:#f8fafc; color:#7681a0; font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .struct svg { width:74px; height:46px; display:block; margin:0 auto; }
+  .tt { position:fixed; display:none; z-index:30; max-width:430px; background:#0f172a; color:#e2e8f0;
+        border-radius:9px; padding:10px 12px; font-size:11.5px; box-shadow:0 10px 30px rgba(2,6,23,.35); }
+  .tt.show { display:block; }
+  .tt .hdr { font-weight:700; margin-bottom:5px; }
+  .tt .cpd { margin-top:4px; color:#cbd5e1; }
+  .tt .cpd-cid { font:600 11px ui-monospace,monospace; color:#fff; }
+  .foot { color:var(--mut); font-size:11.5px; margin-top:14px; line-height:1.6; }
+  code { background:#eef1f8; padding:1px 5px; border-radius:5px; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav style="display:flex;gap:6px;margin-bottom:14px">
+    <a href="index.html" style="font-size:12.5px;font-weight:600;text-decoration:none;padding:6px 12px;border-radius:8px;color:#64748b;border:1px solid #e6e8ef;background:#fff">← Non-additivity matrix</a>
+    <a href="pairs.html" style="font-size:12.5px;font-weight:600;text-decoration:none;padding:6px 12px;border-radius:8px;color:#fff;border:1px solid #5B4FCF;background:#5B4FCF">Pair stories</a>
+  </nav>
+  <h1>SAR R-group Pair Matrix</h1>
+  <p class="sub">Ranks R-group swaps by how large and how <i>consistent</i> their effect is across shared contexts — the swaps to trust.</p>
+
+  <div class="realdata">
+    <span class="dot"></span>
+    <span><b>Real potency data from a live drug-discovery program</b> — R-group structures are illustrative (anonymized for IP); the numbers are real.</span>
+  </div>
+
+  <div class="controls">
+    <div class="ctl"><label>Pair axis</label>
+      <select id="f-axis"><option value="R1">R1 (vary)</option><option value="R3">R3 (vary)</option></select></div>
+    <div class="ctl"><label>Metric</label>
+      <select id="f-metric">
+        <option value="pIC50">pIC50 (experiment)</option>
+        <option value="mIC50">pIC50 (model)</option>
+        <option value="diffIC50">Δ: model − experiment (model error)</option>
+      </select></div>
+    <div class="ctl"><label>R2 context</label><select id="f-r2"><option value="">all</option></select></div>
+    <div class="ctl"><label>Min spread</label><input type="number" id="f-minspread" value="0.5" step="0.1" min="0"></div>
+    <div class="ctl"><label>Min shared</label><input type="number" id="f-minshared" value="3" step="1" min="2"></div>
+    <div class="ctl"><label>Top N pairs</label><input type="number" id="f-topn" value="25" step="1" min="1"></div>
+    <div class="ctl"><label>IC50 &lt; (nM)</label><input type="number" id="f-ic50max" placeholder="none" step="1" min="0"></div>
+    <div class="ctl"><label>Completions (IC50)</label>
+      <select id="f-complete"><option value="off">off</option><option value="fill">fill grid</option></select></div>
+  </div>
+
+  <p class="meta" id="meta">loading…</p>
+  <div class="mw" id="mw"></div>
+  <div id="reco"></div>
+  <div class="tt" id="tt"></div>
+
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+let D = [], STRUCT = null, PRO = null;
+
+// ── structure rendering (graceful fallback) ──────────────────────────────────
+function chip(id) {
+  if (!id) return '';
+  if (STRUCT && STRUCT.svgs && STRUCT.svgs[id])
+    return `<span class="struct" title="${(STRUCT.labels && STRUCT.labels[id]) || id}">${STRUCT.svgs[id]}</span>`;
+  return `<span class="chip">${id}</span>`;
+}
+function cidOut(id) { return (STRUCT && STRUCT.cids && STRUCT.cids[id]) || id; }
+
+// ── metric values (raw IC50 in nM → pIC50) ───────────
+function metricValue(d, metric) {
+  const p = (ic50, q) => (ic50 == null || q === '>') ? null : -Math.log10(Math.max(ic50, 0.01) * 1e-9);
+  if (metric === 'pIC50')   return p(d.ic50, d.hq);
+  if (metric === 'mIC50')   return d.ic50_pred ?? null;   // model-predicted pIC50
+  if (metric === 'diffIC50'){ const e=p(d.ic50,d.hq), m=d.ic50_pred; return (e==null||m==null)?null:(m-e); } // model−exp per compound → pair Δ = Δmodel − Δexp (red = model under-reads the swap)
+  return null;
+}
+const higherIsBetter = m => true;
+function ic50Ok(d, mx) { if (mx == null || isNaN(mx)) return true; if (d.ic50 == null || d.hq === '>') return false; return d.ic50 < mx; }
+
+// ── compute the ranked R-group-pair stories ──────────────────────────────────
+function computeMatrix(P) {
+  const metric = P.metric, axisIsR1 = P.axis === 'R1';
+  const pairKey = axisIsR1 ? 'r1' : 'r3', ctxKey = axisIsR1 ? 'r3' : 'r1';
+  // lock the pair set, order and orientation to experiment for the model view, so
+  // flipping experiment↔model keeps the identical layout (only the Δ values change)
+  const orderMetric = (metric === 'mIC50' || metric === 'diffIC50') ? 'pIC50' : metric;
+  const higher = higherIsBetter(orderMetric);
+
+  const pts = D.filter(d => {
+    if (P.r2 && d.r2 !== P.r2) return false;
+    if (!ic50Ok(d, P.ic50Max)) return false;
+    const vo = metricValue(d, orderMetric); if (vo == null) return false;
+    d._mo = vo; d._mv = metricValue(d, metric); return true;
+  });
+
+  const cells = {};
+  for (const d of pts) {
+    const k = d[pairKey] + '|||' + d[ctxKey], cur = cells[k];
+    if (!cur || (higher ? d._mo > cur._mo : d._mo < cur._mo)) cells[k] = d;   // representative by order metric
+  }
+  const rowSet = new Set(), colSet = new Set();
+  for (const k in cells) { const [r, c] = k.split('|||'); rowSet.add(r); colSet.add(c); }
+  const rows = [...rowSet], cols = [...colSet];
+
+  const minShared = Math.max(2, +P.minShared || 2), minSpread = +P.minSpread || 0;
+  const stories = [];
+  for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) {
+    let ra = rows[i], rb = rows[j];
+    const shared = cols.filter(c => cells[ra + '|||' + c] && cells[rb + '|||' + c]);
+    if (shared.length < minShared) continue;
+    let dO = {}, dV = {};
+    for (const c of shared) {
+      const a = cells[ra + '|||' + c], b = cells[rb + '|||' + c];
+      dO[c] = higher ? (a._mo - b._mo) : (b._mo - a._mo);                       // order Δ (ranking)
+      dV[c] = (a._mv == null || b._mv == null) ? null : (higher ? (a._mv - b._mv) : (b._mv - a._mv)); // displayed Δ
+    }
+    const ov = Object.values(dO);
+    const spreadO = Math.max(...ov) - Math.min(...ov);
+    if (spreadO < minSpread) continue;
+    let avgO = ov.reduce((a, b) => a + b, 0) / ov.length;
+    if (avgO < 0) { [ra, rb] = [rb, ra]; const fO = {}, fV = {}; for (const c of shared) { fO[c] = -dO[c]; fV[c] = (dV[c] == null ? null : -dV[c]); } dO = fO; dV = fV; avgO = -avgO; }
+    const vv = Object.values(dV).filter(x => x != null);
+    const spreadV = vv.length ? Math.max(...vv) - Math.min(...vv) : 0;
+    const avgV = vv.length ? vv.reduce((a, b) => a + b, 0) / vv.length : 0;
+    stories.push({ ra, rb, shared, deltas: dV, spread: spreadV, avg: avgV, _ord: spreadO });
+  }
+  stories.sort((a, b) => b._ord - a._ord);   // rank by the fixed order metric → stable across experiment/model
+  return { stories: stories.slice(0, Math.max(1, +P.topN || 25)), cells, metric, totalCands: stories.length, nPts: pts.length };
+}
+
+// ── render ───────────────────────────────────────────────────────────────────
+function fmtDelta(d, fold) {
+  if (fold) { const f = Math.pow(10, Math.abs(d)); return (d > .02 ? '+' : d < -.02 ? '−' : '') + f.toFixed(1) + '×'; }
+  return (d > 0 ? '+' : '') + d.toFixed(2);
+}
+const MLABEL = { pIC50:'pIC50 (exp)', mIC50:'pIC50 (model)', diffIC50:'Δ model−exp' };
+
+function render() {
+  const P = {
+    axis: f('f-axis'), metric: f('f-metric'), r2: f('f-r2'),
+    ic50Max: f('f-ic50max') ? +f('f-ic50max') : null,
+    minSpread: +f('f-minspread'), minShared: +f('f-minshared'), topN: +f('f-topn'),
+    complete: f('f-complete'),
+  };
+  const M = computeMatrix(P), fold = M.metric.startsWith('shift');
+  window._M = M; window._fold = fold;
+
+  // fill-grid mode: model-predict Δ for each shown pair at its un-observed contexts
+  const fillMode = P.complete === 'fill' && PRO && ['pIC50','mIC50','diffIC50'].includes(P.metric);
+  if (fillMode) {
+    const axisIsR1 = P.axis === 'R1';
+    const predOf = (frag,c) => PRO.cells[axisIsR1 ? frag+'|||'+c : c+'|||'+frag]?.pred ?? null;
+    const ctxByFrag = {};
+    for (const k in PRO.cells){ const [a,b]=k.split('|||'); const frag=axisIsR1?a:b, c=axisIsR1?b:a; (ctxByFrag[frag]||=new Set()).add(c); }
+    for (const s of M.stories) {
+      s.fill = {};
+      const cand = new Set([...(ctxByFrag[s.ra]||[]), ...(ctxByFrag[s.rb]||[])]);
+      for (const c of cand) { if (s.deltas[c]!=null) continue; const pa=predOf(s.ra,c), pb=predOf(s.rb,c); if(pa==null||pb==null) continue; s.fill[c]=pa-pb; }
+    }
+  }
+
+  document.getElementById('meta').innerHTML =
+    `Metric <b>${MLABEL[M.metric]}</b> · pair axis <b>${P.axis}</b> · <b>${M.nPts}</b> compounds · ` +
+    `<b>${M.stories.length}</b> of ${M.totalCands} R-group pairs pass filters` +
+    (fillMode ? ` · <span style="font-style:italic;color:#7c3aed">dashed cells = model-predicted completions</span>` : '');
+
+  if (!M.stories.length) { document.getElementById('mw').innerHTML =
+    '<div style="padding:34px;color:#64748b;text-align:center">No R-group pairs pass the filters — loosen min spread / min shared.</div>'; return; }
+
+  const colCount = {};
+  for (const s of M.stories) { for (const c of s.shared) colCount[c] = (colCount[c] || 0) + 1; if (s.fill) for (const c in s.fill) colCount[c] = (colCount[c] || 0) + 0.5; }
+  const ctx = Object.keys(colCount).sort((a, b) => colCount[b] - colCount[a]);
+
+  let h = '<table><tr>';
+  h += `<th class="co">Pair (${P.axis}) · spread →</th>`;
+  for (const c of ctx) h += `<th class="ch">${chip(c)}</th>`;
+  h += '<th class="ch" style="background:#eef2ff">Avg Δ</th><th class="ch">Spread</th></tr>';
+
+  M.stories.forEach((s, si) => {
+    h += '<tr>';
+    h += `<th class="rh"><div class="pair-cell">${chip(s.ra)}<span class="vs">vs</span>${chip(s.rb)}` +
+         `<span class="tag-spr">${fold ? Math.pow(10, s.spread).toFixed(1) + '×' : s.spread.toFixed(2)}</span></div></th>`;
+    for (const c of ctx) {
+      const d = s.deltas[c];
+      if (d != null) {
+        const I = Math.min(Math.abs(d) / 1.5, 1);
+        const bg = d > .05 ? `rgba(22,163,74,${I*.5})` : d < -.05 ? `rgba(220,38,38,${I*.5})` : '#f9fafb';
+        const cl = d > .05 ? '#15803d' : d < -.05 ? '#dc2626' : '#94a3b8';
+        h += `<td style="background:${bg};color:${cl}" onmouseenter="tip(event,${si},'${c}')" onmouseleave="untip()">${fmtDelta(d, fold)}</td>`;
+      } else if (s.fill && s.fill[c] != null) {
+        const fd = s.fill[c], I = Math.min(Math.abs(fd) / 1.5, 1);
+        const bg = fd > .05 ? `rgba(22,163,74,${I*.32})` : fd < -.05 ? `rgba(220,38,38,${I*.32})` : '#fafafa';
+        const cl = fd > .05 ? '#15803d' : fd < -.05 ? '#dc2626' : '#94a3b8';
+        h += `<td style="background:${bg};color:${cl};outline:1.5px dashed #b9bdd0;outline-offset:-3px;font-style:italic" onmouseenter="tipFill(event,${si},'${c}')" onmouseleave="untip()">${fmtDelta(fd, fold)}</td>`;
+      } else { h += '<td style="background:#fafbfc;color:#e5e7eb">—</td>'; }
+    }
+    const aI = Math.min(Math.abs(s.avg) / 1.5, 1);
+    const aBg = s.avg > .05 ? `rgba(22,163,74,${aI*.35})` : s.avg < -.05 ? `rgba(220,38,38,${aI*.35})` : '#f5f3ff';
+    const aCl = s.avg > .05 ? '#15803d' : s.avg < -.05 ? '#dc2626' : '#64748b';
+    h += `<td style="background:${aBg};color:${aCl};font-weight:700">${fmtDelta(s.avg, fold)}</td>`;
+    const sI = Math.min(s.spread / 1.5, 1);
+    h += `<td style="background:rgba(139,92,246,${sI*.3});color:#7c3aed;font-weight:700">${fold ? Math.pow(10, s.spread).toFixed(1) + '×' : s.spread.toFixed(2)}</td></tr>`;
+  });
+  h += '</table>';
+  document.getElementById('mw').innerHTML = h;
+  document.getElementById('reco').innerHTML = '';   // completions list removed; 'fill' mode renders inline in the grid above
+}
+
+// tooltip for a model-predicted (fill) completion cell
+function tipFill(ev, si, c) {
+  const s = window._M.stories[si]; const fd = s.fill ? s.fill[c] : null; if (fd == null) return;
+  const fold = window._fold, lab = id => STRUCT?.labels?.[id] || id;
+  const fmt = v => fold ? Math.pow(10, v).toFixed(2) + '×' : (v>0?'+':'') + v.toFixed(2);
+  const t = document.getElementById('tt');
+  t.innerHTML = `<div class="hdr" style="color:#a78bfa">predicted completion</div>` +
+    `<div>Δ <b>${fmt(fd)}</b> ${MLABEL[window._M.metric]} for <b>${lab(s.ra)}</b> → <b>${lab(s.rb)}</b></div>` +
+    `<div>at context <b>${lab(c)}</b></div>` +
+    `<div style="color:#94a3b8;margin-top:3px">model-predicted; this pair isn't fully made here — synthesize the missing partner to test it</div>`;
+  t.classList.add('show');
+  t.style.left = Math.min(ev.clientX + 14, innerWidth - 320) + 'px';
+  t.style.top = Math.min(ev.clientY + 14, innerHeight - 120) + 'px';
+}
+
+function tip(ev, si, c) {
+  const s = window._M.stories[si], C = window._M.cells, fold = window._fold;
+  const a = C[s.ra + '|||' + c], b = C[s.rb + '|||' + c]; if (!a || !b) return;
+  const d = s.deltas[c], dCl = d==null?'#94a3b8': d > .05 ? '#86efac' : d < -.05 ? '#fca5a5' : '#cbd5e1';
+  const ep = x => (x.ic50!=null && x.hq!=='>') ? (9-Math.log10(Math.max(x.ic50,0.01))).toFixed(2) : '—';
+  const mp = x => x.ic50_pred!=null ? x.ic50_pred.toFixed(2) : '—';
+  const t = document.getElementById('tt');
+  t.innerHTML = `<div class="hdr">Δ = <span style="color:${dCl}">${d==null?'—':fmtDelta(d, fold)}</span>` +
+    ` <span style="font-weight:400;color:#94a3b8">(${MLABEL[window._M.metric]})</span></div>` +
+    `<div class="cpd">top <span class="cpd-cid">${cidOut(a.id)}</span> · exp <b>${ep(a)}</b> · model <b>${mp(a)}</b> <span style="color:#94a3b8">pIC50</span></div>` +
+    `<div class="cpd">bot <span class="cpd-cid">${cidOut(b.id)}</span> · exp <b>${ep(b)}</b> · model <b>${mp(b)}</b> <span style="color:#94a3b8">pIC50</span></div>`;
+  t.classList.add('show');
+  t.style.left = Math.min(ev.clientX + 14, innerWidth - 440) + 'px';
+  t.style.top = Math.min(ev.clientY + 14, innerHeight - 120) + 'px';
+}
+function untip() { document.getElementById('tt').classList.remove('show'); }
+const f = id => document.getElementById(id).value;
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+async function boot() {
+  const mx = await fetch('data/matrix.json', {cache:'no-store'}).then(r => r.json());
+  D = mx.records;
+  // public illustrative structures (committed); private real structures override if present
+  try { STRUCT = await fetch('data/structures.json', {cache:'no-store'}).then(r => r.ok ? r.json() : null); } catch (e) { STRUCT = null; }
+  try { const priv = await fetch('data_private/structures.private.json', {cache:'no-store'}).then(r => r.ok ? r.json() : null); if (priv) STRUCT = priv; } catch (e) {}
+  try { PRO = await fetch('data/prospective.json', {cache:'no-store'}).then(r => r.ok ? r.json() : null); } catch (e) { PRO = null; }
+
+  // R2 filter options from the data (labelled if structures present)
+  const r2s = [...new Set(D.map(d => d.r2).filter(Boolean))]
+    .sort((a, b) => ((STRUCT?.labels?.[a]) || a).localeCompare((STRUCT?.labels?.[b]) || b));
+  const sel = document.getElementById('f-r2');
+  for (const id of r2s) {
+    const o = document.createElement('option');
+    o.value = id; o.textContent = (STRUCT?.labels?.[id]) || id; sel.appendChild(o);
+  }
+
+  document.querySelectorAll('select,input').forEach(el => el.addEventListener('input', render));
+  document.getElementById('foot').innerHTML =
+    `Each row is an R-group swap (top vs bottom); each column a shared context. Green = the top fragment is more potent in that context, red = less; ` +
+    `<b>spread</b> flags context-dependence (an activity-cliff / non-additivity signal). ` +
+    `Switch <b>Metric</b> between IC50 <b>experiment</b>, <b>model</b>, and <b>Δ model−exp</b> (the model error) on the same rows. ` +
+    `In the diff view, <span style="color:#dc2626;font-weight:600">red</span> = model under-reads the swap (predicts a smaller effect than experiment), <span style="color:#16a34a;font-weight:600">green</span> = over-reads, pale = agrees. `;
+  render();
+}
+boot();
+</script>
+</body>
+</html>

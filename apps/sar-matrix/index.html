@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAR Matrix — model vs non-additivity (R1 × R3)</title>
+<style>
+  :root { --accent:#5B4FCF; --ink:#1f2430; --mut:#64748b; --line:#e6e8ef; --green:#16a34a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:#fbfbfd; }
+  .wrap { max-width:1280px; margin:0 auto; padding:22px 22px 60px; }
+  nav { display:flex; gap:6px; margin-bottom:14px; }
+  nav a { font-size:12.5px; font-weight:600; text-decoration:none; padding:6px 12px; border-radius:8px; color:var(--mut); border:1px solid var(--line); background:#fff; }
+  nav a.on { color:#fff; background:var(--accent); border-color:var(--accent); }
+  h1 { font-size:20px; margin:0 0 2px; letter-spacing:-.01em; }
+  .sub { color:var(--mut); font-size:13px; margin:0 0 16px; max-width:900px; }
+  .realdata { display:inline-flex; align-items:center; gap:9px; margin:0 0 16px; padding:8px 14px; font-size:12.5px; line-height:1.4;
+              color:#3b3470; background:#f3f1fc; border:1px solid #d8d3f4; border-left:3px solid var(--accent); border-radius:9px; max-width:900px; }
+  .realdata b { color:var(--accent); font-weight:650; }
+  .realdata .dot { flex:none; width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px #e3def8; }
+  .controls { display:flex; flex-wrap:wrap; gap:12px 18px; align-items:flex-end; background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:12px; }
+  .ctl { display:flex; flex-direction:column; gap:3px; }
+  .ctl label { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--mut); font-weight:600; }
+  select, input { font:13px inherit; padding:5px 8px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink); }
+  input[type=number] { width:74px; }
+  .storynav { display:flex; align-items:center; gap:7px; }
+  .storynav button { font:600 12.5px inherit; padding:5px 11px; border:1px solid var(--accent); border-radius:7px;
+                     background:var(--accent); color:#fff; cursor:pointer; line-height:1; transition:background .12s,opacity .12s; }
+  .storynav button:hover:not(:disabled) { background:#4a3fb5; }
+  .storynav button:disabled { background:#eef0f5; color:#aab1c2; border-color:var(--line); cursor:default; }
+  .storynav .storystep { font:600 12px ui-monospace,Menlo,monospace; color:var(--accent); min-width:34px; text-align:center; }
+  .stat { background:#f5f3ff; border:1px solid #ddd6fe; color:#4338ca; border-radius:10px; padding:9px 13px; font-size:12.5px; margin:0 0 12px; }
+  .stat b { color:#3730a3; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; align-items:center; font-size:11.5px; color:var(--mut); margin:0 0 10px; }
+  .legend .li { display:flex; align-items:center; gap:5px; }
+  .sw { width:13px; height:13px; border-radius:50%; display:inline-block; }
+  .meta { color:var(--mut); font-size:12.5px; margin:0 0 8px; } .meta b { color:var(--ink); }
+  .mw { overflow:auto; max-height:74vh; border:1px solid var(--line); border-radius:12px; background:#fff; }
+  table { border-collapse:separate; border-spacing:0; }
+  th.co { position:sticky; left:0; top:0; z-index:6; background:#f7f8fc; min-width:64px; }
+  th.ch { position:sticky; top:0; z-index:4; background:#f7f8fc; padding:3px; }
+  th.rh { position:sticky; left:0; z-index:3; background:#fff; padding:3px; }
+  td { text-align:center; vertical-align:middle; padding:1px; border-bottom:1px solid #f4f5f9; border-right:1px solid #f4f5f9; }
+  .struct svg { width:60px; height:38px; display:block; }
+  .chip { display:inline-block; min-width:42px; padding:3px 5px; border:1px dashed #cbd2e0; border-radius:6px; background:#f8fafc; color:#7681a0; font:600 9px ui-monospace,Menlo,monospace; }
+  .pw { display:flex; align-items:center; justify-content:center; }
+  .su { font-size:8px; color:#94a3b8; line-height:1; }
+  .na-ring { fill:none; }
+  .tt { position:fixed; display:none; z-index:30; max-width:320px; background:#0f172a; color:#e2e8f0; border-radius:9px; padding:9px 11px; font-size:11.5px; box-shadow:0 10px 30px rgba(2,6,23,.35); }
+  .tt.show { display:block; }
+  .tt .hdr { font-weight:700; margin-bottom:4px; }
+  .foot { color:var(--mut); font-size:11.5px; margin-top:14px; line-height:1.6; max-width:940px; }
+  code { background:#eef1f8; padding:1px 5px; border-radius:5px; font-size:11px; }
+  /* worked-example cards */
+  .ex-wrap { display:flex; flex-direction:column; gap:16px; max-width:1000px; margin:18px auto 0; }
+  .ex-card { border:1px solid var(--line); border-radius:14px; padding:20px 26px; background:#fff; }
+  .ex-h { font-weight:650; font-size:14px; margin-bottom:3px; }
+  .ex-h .light { font-weight:400; color:var(--mut); }
+  .ex-sub { font-size:11.5px; color:var(--mut); margin-bottom:18px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .ex-flow { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
+  .ex-mol { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:140px; }
+  .ex-mol .struct svg { width:120px; height:74px; }
+  .ex-ctx .struct svg { width:72px; height:46px; vertical-align:middle; }
+  .ex-grid .struct svg { width:66px; height:42px; }
+  .ex-val { font-size:11.5px; text-align:center; line-height:1.45; }
+  .ex-arrows { display:flex; flex-direction:column; gap:14px; min-width:230px; padding:0 10px; }
+  .ar { font-size:12px; font-weight:650; display:flex; align-items:center; gap:7px; white-space:nowrap; }
+  .ar svg { flex:none; }
+  .ex-note { font-size:12.5px; margin-top:18px; color:#334155; line-height:1.55; }
+  .ex-grid { border-collapse:collapse; }
+  .ex-grid td { border:1px solid #eef0f5; text-align:center; padding:8px 14px; font-size:12px; line-height:1.45; }
+  .ex-grid td.corner { border:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="on" href="index.html">Non-additivity matrix</a>
+    <a href="pairs.html">Pair stories →</a>
+  </nav>
+  <h1>SAR Matrix · can the model see the non-additivity?</h1>
+  <p class="sub">An ML potency model, audited against experiment: it predicts absolute potency well, but design decisions turn on the difference between two close analogs, which is harder. Step through the views (<b>← / →</b>) — the non-additive SAR, where the model misses it, a matched-pair audit of its error, and what to make next.</p>
+
+  <div class="realdata">
+    <span class="dot"></span>
+    <span><b>Real potency data from a live drug-discovery program</b> — R-group structures are illustrative (anonymized for IP); the numbers are real.</span>
+  </div>
+
+  <div class="controls">
+    <div class="ctl"><label>View</label>
+      <select id="view">
+        <option value="exp">Experiment non-additivity</option>
+        <option value="gap">Model blind spots (exp − model)</option>
+        <option value="parity">★ Reality check</option>
+        <option value="pro">★ Make next</option>
+      </select></div>
+    <div class="ctl"><label>Story</label>
+      <div class="storynav">
+        <button type="button" id="storyPrev" title="Previous view">← Prev</button>
+        <span id="storyStep" class="storystep">1 / 4</span>
+        <button type="button" id="storyNext" title="Next view">Next →</button>
+      </div></div>
+    <div class="ctl"><label>IC50 ≤ (nM)</label><input type="number" id="thr" value="100" step="10" min="1"></div>
+    <div class="ctl"><label>Min R2 groups / cell</label><input type="number" id="minc" value="2" step="1" min="1"></div>
+    <div class="ctl" id="promode-wrap" style="display:none"><label>Cells</label>
+      <select id="promode"><option value="makenext">★ Make next (bias-corrected)</option><option value="made">Made (experiment)</option></select></div>
+    <div class="ctl" id="kappa-wrap" style="display:none"><label>explore ↔ exploit (κ) · <b id="kappaval">1</b></label>
+      <input type="range" id="kappa" value="1" min="0" max="2" step="0.25"></div>
+    <div class="ctl" id="parityaxis-wrap" style="display:none"><label>Vary</label>
+      <select id="parityaxis"><option value="R1">R1 (share R2,R3)</option><option value="R3">R3 (share R1,R2)</option><option value="both" selected>both R1 &amp; R3</option></select></div>
+    <div class="ctl" id="minctx-wrap" style="display:none"><label>Min contexts / swap · <b id="minctxval">3</b></label>
+      <input type="range" id="minctx" value="3" min="2" max="10" step="1"></div>
+  </div>
+
+  <div class="stat" id="stat"></div>
+
+  <div class="legend" id="legend"></div>
+
+  <p class="meta" id="meta">loading…</p>
+  <div class="mw" id="mw"></div>
+  <div class="tt" id="tt"></div>
+
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+let D = [], STRUCT = null, PRO = null;
+let ORD1 = [], ORD3 = [];          // canonical R1 / R3 order (global compound-count desc), shared by all views
+const OI1 = {}, OI3 = {};          // gid → canonical index
+const $ = id => document.getElementById(id);
+function chip(id) {
+  if (!id) return '';
+  if (STRUCT?.svgs?.[id]) return `<span class="struct" title="${STRUCT.labels?.[id] || id}">${STRUCT.svgs[id]}</span>`;
+  return `<span class="chip">${id}</span>`;
+}
+function arc(cx, cy, r, a0, a1) {
+  const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0), x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+  return `M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${(a1-a0)>Math.PI?1:0} 1 ${x1},${y1} Z`;
+}
+// both in pIC50 space → higher = better, residual>0 = synergistic
+const expPIC = d => (d.ic50==null||d.hq==='>') ? null : 9-Math.log10(Math.max(d.ic50,0.01));
+const modPIC = d => (d.ic50_pred==null) ? null : d.ic50_pred;
+
+// two-way Free-Wilson; returns {z: per-cell z-residuals, med: median |raw residual| (noise proxy)}
+function fwResid(cellVal) {
+  const rEff={},cEff={},rc={},cc={}; let g=0,N=0;
+  for (const k in cellVal){ const [r,c]=k.split('|||'),v=cellVal[k];
+    rEff[r]=(rEff[r]||0)+v; rc[r]=(rc[r]||0)+1; cEff[c]=(cEff[c]||0)+v; cc[c]=(cc[c]||0)+1; g+=v; N++; }
+  if(!N) return {z:{},med:0};
+  const mu=g/N; for(const r in rEff)rEff[r]/=rc[r]; for(const c in cEff)cEff[c]/=cc[c];
+  const res={},ar=[];
+  for(const k in cellVal){ const [r,c]=k.split('|||'); res[k]=cellVal[k]-(mu+(rEff[r]-mu)+(cEff[c]-mu)); ar.push(Math.abs(res[k])); }
+  ar.sort((a,b)=>a-b); const medRaw=ar[Math.floor(ar.length/2)]||0; const mad=medRaw*1.4826||1;
+  const z={}; for(const k in res) z[k]=res[k]/mad;
+  return {z, med:medRaw};
+}
+
+function compute() {
+  const thr=+$('thr').value, minc=Math.max(1,+$('minc').value);
+  const pass=d=>d.ic50!=null&&d.hq!=='>'&&d.ic50<=thr;
+  const picThr=9-Math.log10(Math.max(thr,1e-6));   // model "hit" threshold in pIC50
+  const cells={};
+  for(const d of D){
+    if(!d.r1||!d.r3) continue;
+    const k=d.r1+'|||'+d.r3; (cells[k]||={n:0,pass:0,mn:0,mpass:0,exp:[],mod:[]});
+    if(d.ic50!=null){ cells[k].n++; if(pass(d)) cells[k].pass++; }
+    if(d.ic50_pred!=null){ cells[k].mn++; if(d.ic50_pred>=picThr) cells[k].mpass++; }
+    const e=expPIC(d); if(e!=null) cells[k].exp.push(e);
+    const m=modPIC(d); if(m!=null) cells[k].mod.push(m);
+  }
+  for(const k in cells) if(cells[k].n<minc) delete cells[k];
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+  // ── Free-Wilson + non-additivity computed over ALL cells,
+  //    so z-scores, rings, correlation and pie sizes stay stable as you resize the view ──
+  const cvExp={},cvMod={};
+  for(const k in cells){ if(cells[k].exp.length) cvExp[k]=mean(cells[k].exp); if(cells[k].mod.length) cvMod[k]=mean(cells[k].mod); }
+  const E=fwResid(cvExp), Mz=fwResid(cvMod);
+  const ze=E.z, zm=Mz.z;
+  const common=Object.keys(ze).filter(k=>k in zm);
+  const xs=common.map(k=>ze[k]), ys=common.map(k=>zm[k]);
+  let r=null;
+  if(xs.length>3){ const mx=mean(xs),my=mean(ys);
+    const cov=common.reduce((s,k,i)=>s+(xs[i]-mx)*(ys[i]-my),0);
+    const sx=Math.sqrt(xs.reduce((s,v)=>s+(v-mx)**2,0)), sy=Math.sqrt(ys.reduce((s,v)=>s+(v-my)**2,0));
+    r=cov/(sx*sy); }
+  const captured=common.filter(k=>Math.abs(ze[k])>1 && Math.abs(zm[k])>0.8 && (ze[k]>0)===(zm[k]>0)).length;
+  const expCliffs=common.filter(k=>Math.abs(ze[k])>1).length;
+  const maxN=Math.max(1,...Object.values(cells).map(v=>v.n));
+  // ring-thickness scaling, also global (per view) so thickness stays stable
+  const naMaxExp=Math.max(1.5,...Object.values(ze).map(Math.abs));
+  const naMaxGap=Math.max(1.5,...common.map(k=>Math.abs(ze[k]-zm[k])));
+  // ── DISPLAY: all rows/cols that have any qualifying cell (filtered only by Min R2 groups / cell) ──
+  const rN={},cN={};
+  for(const k in cells){ const [r,c]=k.split('|||'); rN[r]=(rN[r]||0)+cells[k].n; cN[c]=(cN[c]||0)+cells[k].n; }
+  const rows=Object.keys(rN).sort((a,b)=>OI1[a]-OI1[b]);
+  const cols=Object.keys(cN).sort((a,b)=>OI3[a]-OI3[b]);
+  return {cells,rows,cols,ze,zm,maxN,r,captured,expCliffs,nCommon:common.length,naMaxExp,naMaxGap,
+          nFit:Object.keys(ze).length, medResid:E.med, minc};
+}
+
+const VIEW = () => $('view').value;
+function ringFor(M,k){
+  const v=VIEW();
+  if(v==='exp'){ const z=M.ze[k]; return z==null?null:{z,mag:Math.abs(z),clr:z>0?'#2563eb':'#dc2626'}; }
+  const e=M.ze[k],m=M.zm[k]; if(e==null||m==null) return null;
+  const gap=Math.abs(e-m); return {z:e-m,mag:gap,clr:'#7c3aed',gap:true,e,m};
+}
+
+function render(){
+  const v=VIEW();
+  $('promode-wrap').style.display = (v==='pro') ? 'flex' : 'none';
+  $('kappa-wrap').style.display = (v==='pro' && $('promode').value==='makenext') ? 'flex' : 'none';
+  $('parityaxis-wrap').style.display = (v==='parity') ? 'flex' : 'none';
+  $('minctx-wrap').style.display = (v==='parity') ? 'flex' : 'none';
+  // matrix-table views (exp/mod/gap) need the inner scroll for a wide/tall grid;
+  // parity & prospective flow naturally on the single page scroll (no nested scrollbar).
+  const flow = (v==='parity'||v==='pro');
+  const mw=$('mw');
+  mw.style.maxHeight = flow ? 'none' : '74vh';
+  mw.style.overflow  = flow ? 'visible' : 'auto';
+  mw.style.border    = flow ? 'none' : '';
+  mw.style.background = flow ? 'transparent' : '';
+  if(v==='pro'){ renderProspective(); return; }
+  if(v==='parity'){ renderParity(); return; }
+  const M=compute(); window._M=M;
+  const rTxt = M.r==null?'—':M.r.toFixed(2);
+  const Lstat=(h,t)=>`<div style="margin:9px 0"><b style="color:#0f172a">${h}</b> <span style="color:#475569">${t}</span></div>`;
+  $('stat').innerHTML = `<div style="max-width:940px;margin:16px 0 0;font-size:14.5px;line-height:1.5">`+
+    (v==='gap'
+      ? Lstat('Where the model misses the interactions.',`The same cells, colored by the gap between experiment and the model’s own non-additivity. Bright cells are where the model gets the context wrong — its blind spots, and the most informative compounds to measure. Model tracks experiment at <b>r = ${rTxt}</b>, capturing <b>${M.captured}/${M.expCliffs}</b> of its &gt;1σ cliffs.`)
+      : Lstat('Real SAR isn’t additive.','Each cell is an R1×R3 pair; the ring shows its non-additivity — how far measured potency departs from a two-way additive (Free-Wilson) fit. Blue = better than additive, red = worse. These departures are the part of SAR that group contributions alone can’t predict.'))+
+    `</div>`;
+
+  $('legend').innerHTML = (v==='gap')
+    ? `<span class="li"><span class="sw" style="border:3px solid #7c3aed;background:#fff"></span>blind spot</span><span class="li">ring ∝ |exp − model| σ</span>`
+    : `<span class="li"><span class="sw" style="background:var(--green)"></span>pass</span>`+
+      `<span class="li"><span class="sw" style="border:3px solid #2563eb;background:#fff"></span>synergistic</span>`+
+      `<span class="li"><span class="sw" style="border:3px solid #dc2626;background:#fff"></span>antagonistic</span>`+
+      `<span class="li">ring ∝ |non-additivity| σ</span>`;
+
+  $('meta').innerHTML = `<b>${M.rows.length}</b> R1 × <b>${M.cols.length}</b> R3 · <b>${v==='exp'?'experiment':'blind spots'}</b>`;
+
+  const naMax = v==='gap'?M.naMaxGap : M.naMaxExp;
+  let h='<table><tr><th class="co"></th>';
+  for(const c of M.cols) h+=`<th class="ch">${chip(c)}</th>`;
+  h+='</tr>';
+  for(const r of M.rows){
+    h+=`<tr><th class="rh">${chip(r)}</th>`;
+    for(const c of M.cols){
+      const k=r+'|||'+c, st=M.cells[k];
+      if(!st){ h+='<td style="background:#fafbfc"></td>'; continue; }
+      const R=2+Math.sqrt(st.n/M.maxN)*17;
+      const rg=ringFor(M,k);
+      const show=rg && rg.mag>(rg.gap?0.8:1);
+      const ringW=show?Math.min(rg.mag/naMax*4.5,4.5):0;
+      const sz=Math.ceil((R+ringW)*2+4), cx=sz/2, cy=sz/2;
+      const frac=st.n?st.pass/st.n:0;
+      const ring=show?`<circle cx="${cx}" cy="${cy}" r="${R+ringW/2+0.5}" class="na-ring" stroke="${rg.clr}" stroke-width="${ringW}"/>`:'';
+      let pie;
+      if(frac>=1) pie=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--green)"/>`;
+      else if(frac<=0) pie=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="#e5e7eb"/>`;
+      else pie=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="#e5e7eb"/><path d="${arc(cx,cy,R,-Math.PI/2,-Math.PI/2+frac*2*Math.PI)}" fill="var(--green)"/>`;
+      const lbl=show?`<div class="su" style="color:${rg.clr};font-weight:700">${rg.gap?'Δ'+rg.mag.toFixed(1):(rg.z>0?'+':'')+rg.z.toFixed(1)+'σ'}</div>`:'';
+      const sub=`${st.pass}/${st.n}`;
+      h+=`<td onmouseenter="tip(event,'${k}')" onmouseleave="untip()"><div class="pw">`+
+         `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">${ring}${pie}</svg></div>`+
+         `<div class="su">${sub}</div>${lbl}</td>`;
+    }
+    h+='</tr>';
+  }
+  h+='</table>';
+  $('mw').innerHTML=h;
+}
+
+// ── Reality check: the escalation — absolute → single swap → non-additivity (game of outliers) ──
+function renderParity(){
+  const axis = $('parityaxis') ? $('parityaxis').value : 'R1';
+  const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0, lerp=(a,b,t)=>Math.round(a+(b-a)*t);
+  const corr=(P)=>{ const mx=mean(P.map(p=>p[0])),my=mean(P.map(p=>p[1])); let c=0,sx=0,sy=0;
+    for(const p of P){c+=(p[0]-mx)*(p[1]-my);sx+=(p[0]-mx)**2;sy+=(p[1]-my)**2;} return (sx&&sy)?c/Math.sqrt(sx*sy):0; };
+  const DB=0.3;
+  const badSigned = p => Math.abs(p[0])>=DB && ((p[0]>0)!==(p[1]>0) || Math.abs(p[1])<DB);
+  const badOriented = p => p[0]>=DB && p[1]<DB;
+  const colOf = (p,bad) => { const t=Math.min(Math.abs(p[0]-p[1])/2.5,1);
+    return bad(p) ? `rgb(${lerp(254,153,t)},${lerp(202,18,t)},${lerp(202,18,t)})`
+                  : `rgb(${lerp(199,29,t)},${lerp(220,78,t)},${lerp(247,160,t)})`; };
+  // generic square scatter
+  function scat(pts, xr, yr, color, label){
+    const isBad = color.bad || (()=>false);
+    const S=330, p0=38, X=v=>p0+(v-xr[0])/(xr[1]-xr[0])*(S-2*p0), Y=v=>S-p0-(v-yr[0])/(yr[1]-yr[0])*(S-2*p0);
+    let s=`<svg width="${S}" height="${S}" style="background:#fff;border:1px solid var(--line);border-radius:12px">`;
+    if(yr[0]<0) s+=`<line x1="${X(Math.max(xr[0],0))}" y1="${Y(0)}" x2="${X(xr[1])}" y2="${Y(0)}" stroke="#eef0f5"/>`;
+    if(xr[0]<0) s+=`<line x1="${X(0)}" y1="${Y(yr[0])}" x2="${X(0)}" y2="${Y(yr[1])}" stroke="#eef0f5"/>`;
+    const d0=Math.max(xr[0],yr[0]), d1=Math.min(xr[1],yr[1]);
+    s+=`<line x1="${X(d0)}" y1="${Y(d0)}" x2="${X(d1)}" y2="${Y(d1)}" stroke="#94a3b8" stroke-dasharray="5 4"/>`;
+    for(const grp of [false,true]) for(const pt of pts){ if(!!isBad(pt)!==grp) continue;
+      const t=Math.min(Math.abs(pt[0]-pt[1])/2.5,1), rr=color.neutral?2.2:(isBad(pt)?2.2+2.0*t:1.5+1.1*t);
+      s+=`<circle cx="${X(pt[0]).toFixed(1)}" cy="${Y(pt[1]).toFixed(1)}" r="${rr.toFixed(1)}" fill="${color.neutral?'#3b82f6':colOf(pt,isBad)}" fill-opacity="${color.neutral?0.4:(isBad(pt)?0.9:0.65)}"/>`; }
+    s+=`<text x="${S/2}" y="${S-7}" text-anchor="middle" font-size="10.5" fill="#475569">${label.x}</text>`;
+    s+=`<text x="11" y="${S/2}" text-anchor="middle" font-size="10.5" fill="#475569" transform="rotate(-90 11 ${S/2})">${label.y}</text>`;
+    s+=`<text x="${p0+4}" y="${p0}" font-size="13" font-weight="700" fill="${label.c}">${label.r}</text></svg>`;
+    return s;
+  }
+
+  // L0 — absolute pIC50 per compound
+  const comp = D.filter(d=>d.ic50!=null&&d.hq!=='>'&&d.ic50_pred!=null).map(d=>[9-Math.log10(Math.max(d.ic50,0.01)), d.ic50_pred]);
+  let mae=0; for(const p of comp) mae+=Math.abs(p[0]-p[1]); mae/=comp.length;
+  const rA=corr(comp);
+
+  // matched-pair helpers
+  const recs = D.filter(d=>d.r1&&d.r2&&d.r3&&d.ic50_pred!=null&&d.ic50!=null&&d.hq!=='>')
+                .map(d=>({r1:d.r1,r2:d.r2,r3:d.r3,exp:9-Math.log10(Math.max(d.ic50,0.01)),mod:d.ic50_pred}));
+  const eM={}, mM={}; for(const d of recs){ const k=d.r1+'|'+d.r2+'|'+d.r3; if(!(k in eM)||d.exp>eM[k]){eM[k]=d.exp;mM[k]=d.mod;} }
+  const has=(r1,r2,r3)=>{ const k=r1+'|'+r2+'|'+r3; return k in eM; };
+  // one row per unique compound (best-per-cell), so matched-pair counts are real contexts — not duplicate measurements
+  const cells = Object.keys(eM).map(k=>{ const [r1,r2,r3]=k.split('|'); return {r1,r2,r3,exp:eM[k],mod:mM[k]}; });
+  // L1 — single swap Δ (oriented Δexp ≥ 0)
+  const pairsFor = pos => {
+    const oth={R1:['r2','r3'],R3:['r1','r2']}[pos], pk=pos.toLowerCase(), g={}, out=[];
+    for(const r of cells){ const kk=r[oth[0]]+'|'+r[oth[1]]; (g[kk]||=[]).push(r); }
+    for(const kk in g){ const a=g[kk]; for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){
+      if(a[i][pk]===a[j][pk]) continue; let p=a[i],q=a[j]; if(p.exp<q.exp){const t=p;p=q;q=t;}
+      out.push({de:p.exp-q.exp, dm:p.mod-q.mod, fa:p[pk], fb:q[pk], swp:pk, ctx:oth.map(o=>p[o]), othpos:oth,
+                ea:p.exp, ma:p.mod, eb:q.exp, mb:q.mod, errMax:Math.max(Math.abs(p.exp-p.mod),Math.abs(q.exp-q.mod))}); } }
+    return out;
+  };
+  const swapO = axis==='both' ? [...pairsFor('R1'),...pairsFor('R3')] : pairsFor(axis);
+  const swap = swapO.map(o=>[o.de,o.dm]);
+  const rSwap=corr(swap);
+  const exScore=(de,dm)=> Math.abs(de-dm)+((de>0)!==(dm>0)?2:0);   // prefer big deviation + sign flips
+  const swapEx = swapO.filter(o=>o.errMax<=0.5).sort((a,b)=>exScore(b.de,b.dm)-exScore(a.de,a.dm))[0];
+
+  const svgA=scat(comp,[4,10],[4,10],{neutral:true,bad:()=>false},{x:'experimental pIC50',y:'model pIC50',r:`r ${rA.toFixed(2)} · MAE ${mae.toFixed(2)}`,c:'#1d4ed8'});
+
+  // ── Per-swap reproducible Δ-bias: is a swap's error a one-off, or the same bias every time? ──
+  // For each unordered R-group swap, average its Δ-error (model Δ − experimental Δ, oriented exp-better-first)
+  // across every context it appears in. A single context is noisy (√2·σ); the MEAN over many contexts is not.
+  const sgn=v=>(v>=0?'+':'')+v.toFixed(2), lab=g=>(STRUCT?.labels?.[g]||g);
+  const minC = $('minctx') ? +$('minctx').value : 3;
+  if($('minctxval')) $('minctxval').textContent=minC;
+  const SW={};
+  for(const o of swapO){ const k=[o.fa,o.fb].sort().join('§'); (SW[k]||={d:[],fa:o.fa,fb:o.fb}); SW[k].d.push(o.dm-o.de); }
+  let swaps=Object.values(SW).filter(s=>s.d.length>=minC).map(s=>{
+    const n=s.d.length, m=s.d.reduce((a,b)=>a+b,0)/n,
+          v=Math.max(0,s.d.reduce((a,b)=>a+(b-m)*(b-m),0)/n);
+    return {fa:s.fa,fb:s.fb,n,mean:m,sd:Math.sqrt(v),sem:Math.sqrt(v/n)||1e-6};
+  });
+  swaps.sort((a,b)=>a.mean-b.mean);
+  const nSwap=swaps.length, nSig=swaps.filter(s=>Math.abs(s.mean)>2*s.sem).length;
+  // single-swap Δ scatter — highlight the points that belong to the significantly-biased swaps
+  const sigKeys=new Set(swaps.filter(s=>Math.abs(s.mean)>2*s.sem).map(s=>[s.fa,s.fb].sort().join('§')));
+  const swapPts=swapO.map(o=>[o.de,o.dm, sigKeys.has([o.fa,o.fb].sort().join('§'))?1:0]);
+  const svgB=scat(swapPts,[-0.2,4.6],[-4.6,4.6],{bad:p=>p[2]===1},{x:'experimental Δ (swap)',y:'model Δ',r:`r ${rSwap.toFixed(2)}`,c:'#1d4ed8'});
+  // ── Can the ABSOLUTE plot predict which swaps are biased? two predictors of the observed per-swap Δ-bias ──
+  const fixedObs={}, swpOf={};
+  for(const o of swapO){ const a=[o.fa,o.fb].sort(), k=a.join('§'); (fixedObs[k]||=[]).push((o.fa===a[0]?1:-1)*(o.dm-o.de)); swpOf[k]=o.swp; }
+  const obsFixed=swaps.map(s=>{ const ob=fixedObs[[s.fa,s.fb].sort().join('§')]; return ob.reduce((x,y)=>x+y,0)/ob.length; });
+  // predictor A — naive: a fragment's raw mean absolute error (what you'd read straight off the absolute plot)
+  const FB={}; for(const c of cells){ const e=c.mod-c.exp; for(const g of [c.r1,c.r2,c.r3]){ (FB[g]||={s:0,n:0}); FB[g].s+=e; FB[g].n++; } }
+  const fbias=g=>FB[g]?FB[g].s/FB[g].n:0;
+  const predNaive=swaps.map((s,i)=>{ const a=[s.fa,s.fb].sort(); return [fbias(a[0])-fbias(a[1]), obsFixed[i]]; });
+  // predictor B — deconfounded: additive (Free-Wilson) error model, back-fit so each position controls for the others
+  const a1={},a2={},a3={}, COL={r1:a1,r2:a2,r3:a3};
+  for(let it=0;it<14;it++) for(const pos of ['r1','r2','r3']){ const acc={};
+    for(const c of cells){ const pr=(pos!=='r1'?(a1[c.r1]||0):0)+(pos!=='r2'?(a2[c.r2]||0):0)+(pos!=='r3'?(a3[c.r3]||0):0);
+      const r=(c.mod-c.exp)-pr, g=c[pos]; (acc[g]||=[0,0]); acc[g][0]+=r; acc[g][1]++; }
+    const tbl=COL[pos]; for(const g in acc) tbl[g]=acc[g][0]/acc[g][1]; }
+  const predFW=swaps.map((s,i)=>{ const a=[s.fa,s.fb].sort(), tbl=COL[swpOf[a.join('§')]||'r1']; return [(tbl[a[0]]||0)-(tbl[a[1]]||0), obsFixed[i]]; });
+  const rNaive=predNaive.length>2?corr(predNaive):0, rFW=predFW.length>2?corr(predFW):0;
+  const plim=Math.min(1.6, Math.max(0.85, Math.max(0.1,...[...predNaive,...predFW].flat().map(Math.abs))*1.1));
+  const scNaive=scat(predNaive,[-plim,plim],[-plim,plim],{neutral:true,bad:()=>false},{x:'predicted: fragment’s absolute error',y:'observed swap Δ-bias',r:`r ${rNaive.toFixed(2)}`,c:'#64748b'});
+  const scFW=scat(predFW,[-plim,plim],[-plim,plim],{neutral:true,bad:()=>false},{x:'predicted: error deconfounded across contexts',y:'observed swap Δ-bias',r:`r ${rFW.toFixed(2)}`,c:'#1d4ed8'});
+  // pooled single-context Δ-error noise sd → the ±2SEM band a typical (median-n) swap would show under the null
+  const pV=swaps.reduce((a,s)=>a+s.sd*s.sd*s.n,0)/Math.max(1,swaps.reduce((a,s)=>a+s.n,0));
+  const noiseSd=Math.sqrt(pV)||0.6;
+  const medN=nSwap?[...swaps].sort((a,b)=>a.n-b.n)[Math.floor(nSwap/2)].n:5;
+  const band=2*noiseSd/Math.sqrt(medN);
+  // spread of a single matched pair's Δ-error around zero (two compound errors adding) — the "any one swap is noisy" number
+  const dErr=swapO.map(o=>o.dm-o.de), dMean=dErr.reduce((a,b)=>a+b,0)/(dErr.length||1);
+  const dErrSd=Math.sqrt(dErr.reduce((a,b)=>a+(b-dMean)*(b-dMean),0)/(dErr.length||1));
+
+  const FW=860, frh=Math.max(6,Math.min(11,Math.floor(560/Math.max(nSwap,1)))), ftop=40, fL=64, fR=FW-150, flim=1.3, FH=ftop+nSwap*frh+34;
+  const FX=v=>fL+(Math.max(-flim,Math.min(flim,v))+flim)/(2*flim)*(fR-fL);
+  let svgF=`<svg width="${FW}" height="${FH}" style="background:#fff;border:1px solid var(--line);border-radius:12px">`;
+  svgF+=`<text x="${FW/2}" y="17" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">Per-swap Δ-bias, averaged across contexts</text>`;
+  svgF+=`<text x="${FW/2}" y="32" text-anchor="middle" font-size="10.5" fill="#94a3b8">colored = reproducibly biased (beyond noise) · gray band = noise</text>`;
+  // shaded noise band + zero line
+  svgF+=`<rect x="${FX(-band).toFixed(1)}" y="${ftop}" width="${(FX(band)-FX(-band)).toFixed(1)}" height="${nSwap*frh}" fill="#eef2f8"/>`;
+  svgF+=`<line x1="${FX(-band).toFixed(1)}" y1="${ftop}" x2="${FX(-band).toFixed(1)}" y2="${ftop+nSwap*frh}" stroke="#cdd6e4" stroke-dasharray="2,2"/>`;
+  svgF+=`<line x1="${FX(band).toFixed(1)}" y1="${ftop}" x2="${FX(band).toFixed(1)}" y2="${ftop+nSwap*frh}" stroke="#cdd6e4" stroke-dasharray="2,2"/>`;
+  for(const t of [-1,-0.5,0,0.5,1]){ svgF+=`<line x1="${FX(t).toFixed(1)}" y1="${ftop}" x2="${FX(t).toFixed(1)}" y2="${ftop+nSwap*frh}" stroke="${t===0?'#64748b':'#f1f2f7'}"/><text x="${FX(t).toFixed(1)}" y="${FH-12}" text-anchor="middle" font-size="9" fill="#94a3b8">${t>0?'+':''}${t}</text>`; }
+  swaps.forEach((s,i)=>{ const y=ftop+i*frh+frh/2, sigf=Math.abs(s.mean)>2*s.sem, col=s.mean<0?'#dc2626':'#2563eb', conf=Math.min(1,0.35+0.11*s.n);
+    svgF+=`<line x1="${FX(s.mean-2*s.sem).toFixed(1)}" y1="${y}" x2="${FX(s.mean+2*s.sem).toFixed(1)}" y2="${y}" stroke="${sigf?col:'#c2cbd9'}" stroke-width="${sigf?1.4:1}" stroke-opacity="${sigf?0.6:0.5}"/>`;
+    svgF+=`<circle cx="${FX(s.mean).toFixed(1)}" cy="${y}" r="${sigf?2.7:1.7}" fill="${sigf?col:'#94a3b8'}" fill-opacity="${sigf?conf:0.85}"/>`; });
+  // labels for the most reproducibly-biased swaps (extremes), with leader lines to avoid the dense middle
+  const flagged=swaps.map((s,i)=>({s,i})).filter(o=>Math.abs(o.s.mean)>2*o.s.sem)
+                     .sort((a,b)=>Math.abs(b.s.mean)-Math.abs(a.s.mean)).slice(0,8);
+  flagged.forEach(o=>{ const s=o.s, y=ftop+o.i*frh+frh/2, col=s.mean<0?'#dc2626':'#2563eb', right=s.mean>=0;
+    const tx=right?fR+8:fL-8, anch=right?'start':'end';
+    svgF+=`<line x1="${FX(s.mean).toFixed(1)}" y1="${y}" x2="${tx}" y2="${y}" stroke="${col}" stroke-opacity="0.25"/>`;
+    svgF+=`<text x="${tx}" y="${y+3}" text-anchor="${anch}" font-size="8.5" fill="${col}">${(lab(s.fa)+'↔'+lab(s.fb)).slice(0,26)} <tspan fill="#9aa3b2">${sgn(s.mean)}·n${s.n}</tspan></text>`; });
+  svgF+=`</svg>`;
+
+  const ttl=t=>`<div style="font-size:12.5px;font-weight:650;margin-bottom:5px;text-align:center">${t}</div>`;
+
+  // ── "What to make next" — value-of-information decision rule over the per-swap Δ-bias ──
+  // RECALIBRATE: confirmed bias, free fix.  MAKE NEXT: promising but unconfirmed → estimate contexts to confirm.  IGNORE: within noise.
+  function voiPanel(){
+    const acts=swaps.map(s=>{
+      const am=Math.abs(s.mean);
+      let action;
+      if(am>2*s.sem && s.n>=4) action='recal';
+      else if(am>band) action='make';
+      else action='ignore';
+      let k=0;
+      if(action==='make'){ const nNeed=Math.ceil((2*noiseSd/Math.max(am,1e-9))**2); k=Math.max(1,nNeed-s.n); }
+      return {...s, am, action, k};
+    });
+    const nRecal=acts.filter(a=>a.action==='recal').length,
+          nMake =acts.filter(a=>a.action==='make').length,
+          nIgnore=acts.filter(a=>a.action==='ignore').length;
+    // ── value-of-information map ── x = |apparent Δ-bias|, y = contexts seen (n)
+    const S=330, p0=40, xMax=Math.max(0.8, ...acts.map(a=>a.am)), nMax=Math.max(4, ...acts.map(a=>a.n));
+    const X=v=>p0+Math.min(v,xMax)/xMax*(S-2*p0), Y=v=>S-p0-(Math.min(v,nMax)-2)/Math.max(1e-9,nMax-2)*(S-2*p0);
+    const COLA={recal:'#16a34a', make:'#f59e0b', ignore:'#cbd5e1'};
+    let g=`<svg width="${S}" height="${S}" style="background:#fff;border:1px solid var(--line);border-radius:12px">`;
+    // region shading: left of band = ignore; right of band split by n=4 (top recal / bottom make)
+    const xB=X(band), y4=Y(4);
+    g+=`<rect x="${p0}" y="${p0}" width="${(xB-p0).toFixed(1)}" height="${S-2*p0}" fill="#f1f5f9" fill-opacity="0.6"/>`;          // ignore (left)
+    g+=`<rect x="${xB.toFixed(1)}" y="${p0}" width="${(S-p0-xB).toFixed(1)}" height="${(y4-p0).toFixed(1)}" fill="#16a34a" fill-opacity="0.08"/>`;   // recal (top-right)
+    g+=`<rect x="${xB.toFixed(1)}" y="${y4.toFixed(1)}" width="${(S-p0-xB).toFixed(1)}" height="${(S-p0-y4).toFixed(1)}" fill="#f59e0b" fill-opacity="0.10"/>`; // make (bottom-right)
+    // guides: vertical at x=band (noise threshold), horizontal at n=4 (confidence cutoff)
+    g+=`<line x1="${xB.toFixed(1)}" y1="${p0}" x2="${xB.toFixed(1)}" y2="${S-p0}" stroke="#94a3b8" stroke-dasharray="4 3"/>`;
+    g+=`<line x1="${p0}" y1="${y4.toFixed(1)}" x2="${S-p0}" y2="${y4.toFixed(1)}" stroke="#94a3b8" stroke-dasharray="4 3"/>`;
+    // region labels
+    g+=`<text x="${((p0+xB)/2).toFixed(1)}" y="${S/2}" text-anchor="middle" font-size="9.5" fill="#94a3b8" transform="rotate(-90 ${((p0+xB)/2).toFixed(1)} ${S/2})">Ignore (noise)</text>`;
+    g+=`<text x="${((xB+S-p0)/2).toFixed(1)}" y="${(p0+12).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="#16a34a">Recalibrate (known — fix free)</text>`;
+    g+=`<text x="${((xB+S-p0)/2).toFixed(1)}" y="${(S-p0-6).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="#b45309">Make next (resolve)</text>`;
+    // dots (ignore first, make-next on top & larger)
+    for(const a of acts.filter(a=>a.action==='ignore')) g+=`<circle cx="${X(a.am).toFixed(1)}" cy="${Y(a.n).toFixed(1)}" r="2.4" fill="${COLA.ignore}" fill-opacity="0.8"/>`;
+    for(const a of acts.filter(a=>a.action==='recal'))  g+=`<circle cx="${X(a.am).toFixed(1)}" cy="${Y(a.n).toFixed(1)}" r="3" fill="${COLA.recal}" fill-opacity="0.9"/>`;
+    for(const a of acts.filter(a=>a.action==='make'))   g+=`<circle cx="${X(a.am).toFixed(1)}" cy="${Y(a.n).toFixed(1)}" r="4.2" fill="${COLA.make}" fill-opacity="0.95" stroke="#b45309" stroke-width="0.6"/>`;
+    g+=`<text x="${S/2}" y="${S-7}" text-anchor="middle" font-size="10.5" fill="#475569">apparent Δ-bias magnitude |mean| (σ)</text>`;
+    g+=`<text x="11" y="${S/2}" text-anchor="middle" font-size="10.5" fill="#475569" transform="rotate(-90 11 ${S/2})">contexts seen (n)</text>`;
+    g+=`</svg>`;
+    // ── ranked MAKE-NEXT picks (top 5 by |mean|) ──
+    const picks=acts.filter(a=>a.action==='make').sort((a,b)=>b.am-a.am).slice(0,5);
+    let list=`<div style="font-size:11.5px;line-height:1.7;color:#334155;max-width:380px">`;
+    if(picks.length){
+      list+=`<div style="font-weight:650;margin-bottom:3px;color:#b45309">Top make-next picks</div>`;
+      for(const a of picks){ const col=a.mean>0?'#2563eb':'#dc2626';
+        list+=`<div>${lab(a.fa)} ↔ ${lab(a.fb)} · apparent Δ <b style="color:${col}">${sgn(a.mean)}</b> · seen n=${a.n} · make <b>~${a.k}</b> more context${a.k===1?'':'s'}</div>`; }
+    } else list+=`<div style="color:#94a3b8">No unconfirmed high-magnitude swaps at this min-contexts setting — nothing worth a synthesis slot.</div>`;
+    list+=`</div>`;
+    return `<div style="margin-top:26px">`+
+      ttl('What to make next — value of information')+
+      `<div style="max-width:940px;margin:0 0 14px;font-size:14.5px;line-height:1.5"><b style="color:#0f172a">Value of information — what to make next.</b> <span style="color:#475569">Each swap placed by apparent bias magnitude (x) vs. contexts seen (y). A bias is <i>confirmed</i> when |mean| &gt; 2·SEM — so the contexts you need scale as (2·spread / bias)²: a big bias confirms in 1–2 contexts, a small one needs many. Confirmed biases you recalibrate for free; large-but-unconfirmed ones are worth measuring; small ones are noise. <b style="color:#0f172a">Make next</b> applies this forward to the unmade compounds.</span></div>`+
+      `<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;align-items:flex-start">`+
+        `<div>${g}</div>`+
+        `<div style="min-width:300px;padding-top:6px">`+
+          `<div style="font-size:11.5px;color:#475569;margin-bottom:8px">`+
+          `<span style="color:#16a34a;font-weight:650">${nRecal}</span> recalibrate · `+
+          `<span style="color:#b45309;font-weight:650">${nMake}</span> make next · `+
+          `<span style="color:#94a3b8;font-weight:650">${nIgnore}</span> ignore</div>`+
+          list+
+        `</div>`+
+      `</div>`+
+      `<div style="text-align:center;margin-top:10px;font-size:11.5px;color:#64748b;max-width:720px;margin-left:auto;margin-right:auto">`+
+        `Not every model error earns a synthesis slot — known biases get recalibrated for free; only the unresolved, high-magnitude swaps are worth making compounds to confirm.</div>`+
+      `</div>`;
+  }
+
+  $('mw').innerHTML=`<div style="padding:8px">`+
+    `<div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:flex-start">`+
+      `<div>${ttl('Absolute potency — nailed')}${svgA}</div>`+
+      `<div>${ttl('Swap Δ — <span style=\'color:#b91c1c\'>biased swaps</span> hug the diagonal')}${svgB}</div>`+
+    `</div>`+
+    `<div style="display:flex;justify-content:center;margin-top:16px">${svgF}</div>`+
+    `<div style="text-align:center;margin-top:22px;font-size:13.5px;color:#0f172a"><b>Predicting swap bias: per-fragment error vs. deconfounded</b></div>`+
+    `<div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:flex-start;margin-top:8px">`+
+      `<div>${ttl('Per-fragment absolute error')}${scNaive}</div>`+
+      `<div>${ttl('Deconfounded across contexts')}${scFW}</div>`+
+    `</div>`+
+    voiPanel()+
+    `<div style="max-width:720px;margin:24px auto 4px;font-size:12px;line-height:1.6;color:#64748b;text-align:center">`+
+      `<b style="color:#475569">The model's error is two things:</b> a per-fragment bias you can recalibrate away, and irreducible uncertainty you can't. `+
+      `<b style="color:#475569">Make next</b> applies both — it subtracts the learned bias from the model's predictions for unmade compounds and ranks them by corrected potency + uncertainty, to say what's worth making.`+
+    `</div>`+
+    `</div>`;
+  const L=(h,t)=>`<div style="margin:9px 0"><b style="color:#0f172a">${h}</b> <span style="color:#475569">${t}</span></div>`;
+  $('stat').innerHTML=`<div style="max-width:940px;margin:16px 0 0;font-size:14.5px;line-height:1.5">`+
+    L('Absolute potency: r '+rA.toFixed(2)+'.','The model predicts measured potency well. Design decisions turn on the difference between two analogs, which is harder.')+
+    L('Single-pair errors are mostly noise.','Large off-diagonal deviations don’t reproduce; averaging a swap over its contexts removes most of the error.')+
+    L('A small reproducible bias remains.',`${nSig} swaps show a consistent offset across contexts (red) — systematic, and not visible in any single pair.`)+
+    L('It can’t be read off the absolute plot.',`Per-fragment absolute error predicts the swap bias at <b>r ${rNaive.toFixed(2)}</b>; deconfounding the context (matched pairs) raises it to <b>r ${rFW.toFixed(2)}</b>. ↓`)+
+    L('The reproducible bias becomes a to-make list.','Recalibrate the confirmed ones for free, measure the large-but-unconfirmed ones (value of information) — applied forward by <a href="#" onclick="gotoView(\'pro\');return false" style="color:#5B4FCF;font-weight:600;text-decoration:none;cursor:pointer">Make next</a>.')+
+    L('','Since this view compares matched pairs, the <a href="pairs.html" style="color:#5B4FCF;font-weight:600;text-decoration:none">pair matrix</a> ranks every R-group swap directly — an alternative cut of the same data. <a href="pairs.html" style="color:#5B4FCF;font-weight:600;text-decoration:none">Open pair view →</a>')+
+    `</div>`;
+  $('legend').innerHTML=`<span class="li"><span class="sw" style="background:#dc2626"></span>reproducible Δ-bias — signal</span>`+
+    `<span class="li"><span class="sw" style="background:#94a3b8"></span>within noise</span>`+
+    `<span class="li"><span class="sw" style="background:#eef2f8;border:1px solid #cdd6e4"></span>±2 SEM noise band</span>`;
+  $('meta').innerHTML=`reality check · potency r ${rA.toFixed(2)} · ${nSig}/${nSwap} swaps reproducibly biased · absolute-plot shortcut r ${rNaive.toFixed(2)} (vary ${axis})`;
+}
+
+// ── Prospective view: model-predicted potency + synergy for every (made & unmade) cell ──
+function potColor(p){
+  if(p==null) return '#e5e7eb';
+  const t=Math.max(0,Math.min(1,(p-5.5)/2.0));   // pIC50 5.5→weak(gray) .. 7.5→potent(green)
+  return `rgb(${Math.round(229-t*207)},${Math.round(231-t*68)},${Math.round(235-t*161)})`;
+}
+function pieSVG(frac,R,cx,cy){
+  if(frac>=1) return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--green)"/>`;
+  if(frac<=0) return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#e5e7eb"/>`;
+  return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#e5e7eb"/><path d="${arc(cx,cy,R,-Math.PI/2,-Math.PI/2+frac*2*Math.PI)}" fill="var(--green)"/>`;
+}
+function renderProspective(){
+  if(!PRO){ $('mw').innerHTML='<div style="padding:30px;color:#64748b;text-align:center">prospective.json not found — run the enumeration step.</div>'; $('stat').innerHTML=''; $('legend').innerHTML=''; return; }
+  // canonical order — same R1/R3 layout as every other view
+  const rows=[...PRO.rows].sort((a,b)=>OI1[a]-OI1[b]);
+  const cols=[...PRO.cols].sort((a,b)=>OI3[a]-OI3[b]);
+  const C=PRO.cells, get=(r,c)=>C[r+'|||'+c];
+  const thr=+$('thr').value, picThr=9-Math.log10(Math.max(thr,1e-6));
+  const mode=$('promode').value;                       // 'made' | 'makenext'
+  const lab=id=>STRUCT?.labels?.[id]||id;              // compact text label (chip() renders the full structure SVG)
+
+  // ── Make-next (VoI): additive (Free-Wilson) ERROR model fit on MADE compounds ──
+  // Same Gauss-Seidel back-fit as renderParity: per-fragment error a1/a2/a3 (model pIC50 − experimental pIC50),
+  // each position controlling for the others. Used to bias-correct unmade-cell predictions.
+  let a1={},a2={},a3={}, nMade={}, interSd=0.6, ACQ=null, topAcq=null, top10Keys=new Set();
+  if(mode==='makenext'){
+    const made=D.filter(d=>d.r1&&d.r2&&d.r3&&d.ic50!=null&&d.hq!=='>'&&d.ic50_pred!=null)
+                .map(d=>({r1:d.r1,r2:d.r2,r3:d.r3, e:d.ic50_pred-(9-Math.log10(Math.max(d.ic50,0.01)))}));
+    for(const m of made) for(const g of [m.r1,m.r2,m.r3]) nMade[g]=(nMade[g]||0)+1;
+    const COL={r1:a1,r2:a2,r3:a3};
+    for(let it=0;it<14;it++) for(const pos of ['r1','r2','r3']){ const acc={};
+      for(const m of made){ const pr=(pos!=='r1'?(a1[m.r1]||0):0)+(pos!=='r2'?(a2[m.r2]||0):0)+(pos!=='r3'?(a3[m.r3]||0):0);
+        const r=m.e-pr, g=m[pos]; (acc[g]||=[0,0]); acc[g][0]+=r; acc[g][1]++; }
+      const tbl=COL[pos]; for(const g in acc) tbl[g]=acc[g][0]/acc[g][1]; }
+    // interSd = RMS of residual error after the additive fit (irreducible interaction/noise sd)
+    let ss=0,nn=0; for(const m of made){ const res=m.e-(a1[m.r1]||0)-(a2[m.r2]||0)-(a3[m.r3]||0); ss+=res*res; nn++; }
+    interSd=nn?Math.sqrt(ss/nn):0.6;
+    const kappa=$('kappa')?+$('kappa').value:1;
+    // per unmade cell: bias-correct each of the 3 R2 probes, take best (most potent), build σ + acquisition score
+    ACQ={};
+    for(const r of rows) for(const c of cols){ const d=get(r,c); if(!d||d.made) continue;
+      const probes=PRO.probeIds||PRO.r2probes||null;             // optional R2 probe IDs, if present
+      const preds=d.preds||[]; if(!preds.length) continue;
+      let bestRaw=-Infinity, bestCorr=-Infinity, bestR2=null, bestIdx=0, bestCorrTerm=0;
+      preds.forEach((p,i)=>{
+        const r2=probes?probes[i]:null, a2t=r2?(a2[r2]||0):0;
+        const corr=p-(a1[r]||0)-a2t-(a3[c]||0);
+        if(p>bestRaw) bestRaw=p;
+        if(corr>bestCorr){ bestCorr=corr; bestR2=r2; bestIdx=i; bestCorrTerm=(a1[r]||0)+a2t+(a3[c]||0); }
+      });
+      // σ_cell = sqrt( interSd²  +  var(preds across the 3 R2 probes)  +  Σ_pos interSd²/nMade[frag] )
+      //   • interSd²            : irreducible interaction/noise floor (constant)
+      //   • var(preds)          : R2-probe DISAGREEMENT — when the model's 3 probe predictions spread out,
+      //                           the achievable potency in this context is less pinned → higher σ (cell-specific)
+      //   • Σ interSd²/nMade    : SAMPLING — grows when this cell's own R1/R3 fragments are individually thin
+      const pm=preds.reduce((s,v)=>s+v,0)/preds.length;
+      const predVar=preds.reduce((s,v)=>s+(v-pm)*(v-pm),0)/preds.length;
+      let sig2=interSd*interSd+predVar;
+      for(const g of [r, c]){ if(g==null) continue; sig2+=interSd*interSd/Math.max(1,nMade[g]||0); }
+      const sigma=Math.sqrt(sig2), score=bestCorr+kappa*sigma;
+      ACQ[r+'|||'+c]={r,c,bestRaw,bestCorr,bestR2,bestIdx,corrTerm:bestCorrTerm,predSd:Math.sqrt(predVar),sigma,score};
+    }
+    const ranked=Object.values(ACQ).sort((x,y)=>y.score-x.score);   // best (highest score) first
+    topAcq=ranked[0]||null;
+    // simple scheme: the top-10 acquisition cells are green, everything else gray.
+    // κ shifts scores → which 10 land in this set changes as you slide it.
+    top10Keys=new Set(ranked.slice(0,10).map(a=>a.r+'|||'+a.c));
+  }
+  // experimental hit-rate per cell (for the "made" mode)
+  const eh={};
+  if(mode==='made') for(const x of D){ if(x.r1&&x.r3&&x.ic50!=null){ const k=x.r1+'|||'+x.r3; (eh[k]||=[0,0]); eh[k][1]++; if(x.hq!=='>'&&x.ic50<=thr) eh[k][0]++; } }
+
+  if(mode==='made'){
+    $('stat').innerHTML=`<div><b>Made — experiment.</b> Real hit-rate per made cell (≤${thr} nM); never-made cells blank.</div>`;
+    $('legend').innerHTML=`<span class="li"><span class="sw" style="background:var(--green)"></span>experimental hit</span>`+
+      `<span class="li"><span class="sw" style="border:2px solid #111;background:#fff"></span>made</span>`+
+      `<span class="li">small dot = never made</span>`;
+  } else if(mode==='makenext'){
+    const kappa=$('kappa')?+$('kappa').value:1;
+    if($('kappaval')) $('kappaval').textContent=kappa;
+    const ranked=ACQ?Object.values(ACQ).sort((x,y)=>y.score-x.score):[];
+    const top=ranked.slice(0,5);
+    // compact one-line top-picks summary — the GRID is the real output (color = acquisition, ★ = #1)
+    const picksLine=top.map(a=>`${lab(a.r)}×${lab(a.c)} <b style="color:#15803d">${a.score.toFixed(2)}</b>`).join(' · ');
+    $('stat').innerHTML=`<div style="max-width:940px;margin:16px 0 0;font-size:14.5px;line-height:1.5">`+
+      `<div style="margin:9px 0"><b style="color:#0f172a">What to make next.</b> <span style="color:#475569">Model predictions for the unmade compounds, corrected by the per-fragment bias learned in Reality check, then ranked by corrected potency + κ·uncertainty (value of information). Green = top acquisitions; κ trades safe picks (exploit) for informative ones (explore). <span style="color:#94a3b8">(κ=${kappa})</span></span></div>`+
+      (top.length?`<div style="margin-top:4px;font-size:11.5px;color:#475569">top picks: ${picksLine}</div>`:`<div style="margin-top:4px;font-size:11.5px;color:#94a3b8">No unmade cells.</div>`)+
+      `</div>`;
+    $('legend').innerHTML=`<span class="li"><span class="sw" style="background:var(--green)"></span>green = top 10 acquisition</span>`+
+      `<span class="li"><span class="sw" style="background:#e5e7eb"></span>gray = rest</span>`+
+      `<span class="li"><span class="sw" style="border:3px solid #b45309;background:#fff"></span>★ #1</span>`+
+      `<span class="li">faded = made</span>`;
+  }
+  $('meta').innerHTML=`<b>${rows.length}</b> R1 × <b>${cols.length}</b> R3 · ${mode==='made'?'experiment (made cells)':'bias-corrected acquisition (unmade)'}`;
+  let h='<table><tr><th class="co"></th>';
+  for(const c of cols) h+=`<th class="ch">${chip(c)}</th>`;
+  h+='</tr>';
+  for(const r of rows){
+    h+=`<tr><th class="rh">${chip(r)}</th>`;
+    for(const c of cols){
+      const k=r+'|||'+c, d=get(r,c);
+      if(!d){ h+='<td style="background:#fafbfc"></td>'; continue; }
+      if(mode==='makenext'){
+        if(d.made){ h+=`<td onmouseenter="tipPro(event,'${r}','${c}')" onmouseleave="untip()" style="opacity:0.35"><div class="pw"><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="3.5" fill="#e9edf4"/></svg></div></td>`; continue; }
+        const a=ACQ?ACQ[k]:null;
+        if(!a){ h+=`<td onmouseenter="tipPro(event,'${r}','${c}')" onmouseleave="untip()"><div class="pw"><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="3.5" fill="#e9edf4"/></svg></div></td>`; continue; }
+        const inTop10=top10Keys.has(k);
+        const fill=inTop10?'var(--green)':'#e5e7eb';   // top-10 acquisition = green · rest = neutral gray
+        const isTop=topAcq&&topAcq.r===r&&topAcq.c===c;
+        const R=11, sz=2*R+8, cx=sz/2, cy=sz/2;
+        const ring=isTop?`<circle cx="${cx}" cy="${cy}" r="${R+2}" fill="none" stroke="#b45309" stroke-width="2.6"/>`:'';
+        const star=isTop?`<text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="13" fill="#fff" font-weight="700" stroke="#b45309" stroke-width="0.5">★</text>`:'';
+        h+=`<td onmouseenter="tipPro(event,'${r}','${c}')" onmouseleave="untip()"><div class="pw"><svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}"><circle cx="${cx}" cy="${cy}" r="${R}" fill="${fill}"/>${ring}${star}</svg></div><div class="su">${a.score.toFixed(1)}</div></td>`;
+        continue;
+      }
+      if(mode==='made'){
+        if(!d.made){ h+=`<td onmouseenter="tipPro(event,'${r}','${c}')" onmouseleave="untip()"><div class="pw"><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="3.5" fill="#e9edf4"/></svg></div></td>`; continue; }
+        const e=eh[k]||[0,0], frac=e[1]?e[0]/e[1]:0, R=11, sz=2*R+6, cx=sz/2, cy=sz/2;
+        h+=`<td onmouseenter="tipPro(event,'${r}','${c}')" onmouseleave="untip()"><div class="pw"><svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">${pieSVG(frac,R,cx,cy)}<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#111" stroke-width="1.6"/></svg></div><div class="su">${e[0]}/${e[1]}</div></td>`;
+      }
+    }
+    h+='</tr>';
+  }
+  $('mw').innerHTML=h+'</table>';
+}
+function tipPro(ev,r,c){
+  const d=PRO.cells[r+'|||'+c]; if(!d) return;
+  const thr=+$('thr').value, picThr=9-Math.log10(Math.max(thr,1e-6));
+  const p=d.preds||[], hits=p.filter(x=>x>=picThr).length;
+  const lab=id=>STRUCT?.labels?.[id]||id, nM=Math.pow(10,9-d.pred), t=$('tt');
+  let expLine='';
+  if(d.made){ let pa=0,nn=0; for(const x of D){ if(x.r1===r&&x.r3===c&&x.ic50!=null){ nn++; if(x.hq!=='>'&&x.ic50<=thr)pa++; } }
+    expLine=`<div>experiment hits <b>${pa}/${nn}</b> ≤ ${thr} nM <span style="color:#94a3b8">(made)</span></div>`; }
+  t.innerHTML=`<div class="hdr">R1 ${lab(r)} × R3 ${lab(c)}</div>`+expLine+
+    `<div>model predicted hits <b>${hits}/${p.length}</b> ≤ ${thr} nM · geomean <b>${nM.toFixed(1)} nM</b></div>`+
+    `<div style="color:#94a3b8">per-R2 pIC50: ${p.map(x=>x.toFixed(2)).join(', ')}</div>`+
+    `<div>predicted synergy <b>${d.syn>0?'+':''}${d.syn.toFixed(2)}σ</b> vs additive</div>`+
+    `<div style="margin-top:4px">${d.made?'<span style="color:#cbd5e1">already made</span>':(d.syn>=1.5&&d.pred>=picThr?'<span style="color:#fcd34d">★ make next — synergistic & potent</span>':'unmade')}</div>`;
+  t.classList.add('show');
+  t.style.left=Math.min(ev.clientX+14,innerWidth-320)+'px';
+  t.style.top=Math.min(ev.clientY+14,innerHeight-150)+'px';
+}
+
+function tip(ev,k){
+  const M=window._M, st=M.cells[k]; if(!st) return;
+  const [r,c]=k.split('|||'); const ze=M.ze[k], zm=M.zm[k];
+  const lab=id=>STRUCT?.labels?.[id]||id;
+  const gm=st.exp.length?Math.pow(10,9-st.exp.reduce((s,v)=>s+v,0)/st.exp.length):null;
+  const verdict = (ze!=null&&zm!=null) ?
+    (Math.abs(ze)>1 ? (Math.abs(zm)>0.8&&(ze>0)===(zm>0) ? '<span style="color:#86efac">model captures this cliff</span>'
+       : '<span style="color:#fca5a5">model misses this cliff (blind spot)</span>') : '<span style="color:#94a3b8">~additive</span>') : '';
+  const t=$('tt');
+  t.innerHTML=`<div class="hdr">R1 ${lab(r)} × R3 ${lab(c)}</div>`+
+    `<div>geomean IC50 ${gm!=null?gm.toFixed(1)+' nM':'—'}</div>`+
+    `<div>hit-rate — experiment <b>${st.pass}/${st.n}</b> · model <b>${st.mpass}/${st.mn}</b></div>`+
+    `<div style="margin-top:4px">experiment non-additivity <b>${ze!=null?(ze>0?'+':'')+ze.toFixed(2)+'σ':'—'}</b></div>`+
+    `<div>model non-additivity <b>${zm!=null?(zm>0?'+':'')+zm.toFixed(2)+'σ':'—'}</b></div>`+
+    `<div style="margin-top:4px">${verdict}</div>`;
+  t.classList.add('show');
+  t.style.left=Math.min(ev.clientX+14,innerWidth-330)+'px';
+  t.style.top=Math.min(ev.clientY+14,innerHeight-140)+'px';
+}
+function untip(){ $('tt').classList.remove('show'); }
+
+async function boot(){
+  const mx=await fetch('data/matrix.json',{cache:'no-store'}).then(r=>r.json()); D=mx.records;
+  // public illustrative structures (committed); private real structures override if present
+  try{ STRUCT=await fetch('data/structures.json',{cache:'no-store'}).then(r=>r.ok?r.json():null); }catch(e){ STRUCT=null; }
+  try{ const priv=await fetch('data_private/structures.private.json',{cache:'no-store'}).then(r=>r.ok?r.json():null); if(priv) STRUCT=priv; }catch(e){}
+  try{ PRO=await fetch('data/prospective.json',{cache:'no-store'}).then(r=>r.ok?r.json():null); }catch(e){ PRO=null; }
+  // canonical R-group order (global compound-count desc) — every view sorts rows/cols by this
+  const c1={},c3={};
+  for(const d of D){ if(d.r1)c1[d.r1]=(c1[d.r1]||0)+1; if(d.r3)c3[d.r3]=(c3[d.r3]||0)+1; }
+  ORD1=Object.keys(c1).sort((a,b)=>c1[b]-c1[a]); ORD3=Object.keys(c3).sort((a,b)=>c3[b]-c3[a]);
+  ORD1.forEach((g,i)=>OI1[g]=i); ORD3.forEach((g,i)=>OI3[g]=i);
+  ['view','thr','minc','promode','parityaxis','minctx','kappa'].forEach(id=>$(id).addEventListener('input',render));
+  // ── story navigation: Prev/Next step through the #view options in order (linear, no wrap) ──
+  const viewSel=$('view'), nOpts=viewSel.options.length;
+  function updateStoryNav(){ const i=viewSel.selectedIndex;
+    $('storyStep').textContent=`${i+1} / ${nOpts}`;
+    $('storyPrev').disabled=(i<=0); $('storyNext').disabled=(i>=nOpts-1); }
+  function stepStory(d){ const i=viewSel.selectedIndex+d;
+    if(i<0||i>=nOpts) return; viewSel.selectedIndex=i; updateStoryNav(); render(); }
+  // jump straight to a view by value (used by in-intro links e.g. "Make next") — syncs dropdown, story step, render
+  window.gotoView=v=>{ if(viewSel.value===v) return; viewSel.value=v; updateStoryNav(); render(); };
+  $('storyPrev').addEventListener('click',()=>stepStory(-1));
+  $('storyNext').addEventListener('click',()=>stepStory(1));
+  viewSel.addEventListener('change',updateStoryNav);   // keep indicator/disabled in sync with the dropdown
+  updateStoryNav();
+  $('foot').innerHTML = `<b>The point:</b> non-additivity is the SAR an additive model can't represent. The model recovers most of it; where it can't are the blind spots — the next compounds to make.`;
+  render();
+}
+boot();
+</script>
+</body>
+</html>

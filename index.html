@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rafal P. Wiewiora — Molecular Designer & Computational Scientist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --indigo:#5B4FCF;
+  --indigo-dark:#4A3FB5;
+  --indigo-deeper:#3D3399;
+  --dark:#1A1A2E;
+  --dark-surface:#232340;
+  --light:#EDEAFC;
+  --near-white:#F8F7FF;
+  --white:#FFFFFF;
+  --text:#2D2D2D;
+  --text-secondary:#555568;
+  --text-muted:#7A7A8C;
+  --border:#E0DDF0;
+  --font-display:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-body:'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+}
+
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:var(--font-body);
+  color:var(--text);
+  background:var(--near-white);
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ═══ NOISE TEXTURE OVERLAY ═══ */
+body::before{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:9999;opacity:0.018;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ═══ NAVIGATION ═══ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(248,247,255,0.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(91,79,207,0.08);
+  transition:box-shadow 0.3s ease;
+}
+nav.scrolled{box-shadow:0 1px 20px rgba(26,26,46,0.06)}
+.nav-inner{
+  max-width:1100px;margin:0 auto;
+  padding:0.9rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-name{
+  font-family:var(--font-display);font-size:1.15rem;font-weight:600;
+  color:var(--dark);letter-spacing:-0.01em;
+  text-decoration:none;
+}
+.nav-links{display:flex;gap:1.8rem;align-items:center}
+.nav-links a{
+  font-size:0.82rem;font-weight:500;letter-spacing:0.04em;
+  text-transform:uppercase;color:var(--text-secondary);
+  text-decoration:none;position:relative;
+  transition:color 0.25s ease;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:-3px;left:0;width:0;height:1.5px;
+  background:var(--indigo);transition:width 0.3s ease;
+}
+.nav-links a:hover{color:var(--indigo)}
+.nav-links a:hover::after{width:100%}
+
+/* ═══ HERO ═══ */
+.hero{
+  display:flex;align-items:center;justify-content:center;
+  padding:9rem 2rem 4.5rem;
+  position:relative;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(91,79,207,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 20%, rgba(91,79,207,0.03) 0%, transparent 50%),
+    var(--near-white);
+}
+.hero-content{max-width:780px;text-align:center}
+.hero-eyebrow{
+  font-size:0.78rem;font-weight:600;letter-spacing:0.18em;
+  text-transform:uppercase;color:var(--indigo);
+  margin-bottom:1.5rem;opacity:0;
+  animation:fadeUp 0.8s ease 0.2s forwards;
+}
+.hero h1{
+  font-family:var(--font-display);
+  font-size:clamp(2.8rem,6vw,4.2rem);
+  font-weight:700;line-height:1.1;
+  color:var(--dark);letter-spacing:-0.025em;
+  margin-bottom:1rem;opacity:0;
+  animation:fadeUp 0.8s ease 0.35s forwards;
+}
+.hero-title{
+  font-family:var(--font-display);
+  font-size:clamp(1.1rem,2.5vw,1.45rem);
+  font-weight:400;font-style:italic;
+  color:var(--text-secondary);
+  margin-bottom:2.5rem;opacity:0;
+  animation:fadeUp 0.8s ease 0.5s forwards;
+}
+.hero-links{
+  display:flex;flex-wrap:wrap;gap:0.7rem;
+  justify-content:center;opacity:0;
+  animation:fadeUp 0.8s ease 0.65s forwards;
+}
+.hero-links a{
+  display:inline-flex;align-items:center;gap:0.45rem;
+  padding:0.5rem 1.1rem;
+  font-size:0.82rem;font-weight:500;
+  color:var(--indigo-dark);
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:100px;
+  text-decoration:none;
+  transition:all 0.25s ease;
+}
+.hero-links a:hover{
+  background:var(--indigo);color:var(--white);
+  border-color:var(--indigo);
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(91,79,207,0.2);
+}
+.hero-links a svg{width:15px;height:15px;flex-shrink:0}
+
+.hero-rule{
+  width:40px;height:2px;background:var(--indigo);
+  margin:3rem auto 0;opacity:0;
+  animation:fadeUp 0.8s ease 0.8s forwards;
+}
+
+/* ═══ SECTIONS ═══ */
+section{padding:5rem 2rem}
+.container{max-width:900px;margin:0 auto}
+.section-label{
+  font-size:0.72rem;font-weight:600;letter-spacing:0.2em;
+  text-transform:uppercase;color:var(--indigo);
+  margin-bottom:0.6rem;
+}
+.section-title{
+  font-family:var(--font-display);
+  font-size:clamp(1.8rem,4vw,2.4rem);
+  font-weight:700;color:var(--dark);
+  line-height:1.2;letter-spacing:-0.02em;
+  margin-bottom:2rem;
+}
+
+/* ═══ ABOUT ═══ */
+.about{background:var(--near-white)}
+.about-text{
+  font-size:1.05rem;line-height:1.85;
+  color:var(--text);max-width:780px;
+}
+.about-text em{
+  font-style:italic;color:var(--indigo-dark);
+  font-family:var(--font-display);font-size:1.1em;
+}
+
+/* ═══ INTERACTIVE DEMOS ═══ */
+.demos{background:var(--white)}
+.demos-lead{
+  font-size:1.05rem;line-height:1.8;
+  color:var(--text-secondary);max-width:740px;
+  margin-bottom:2.5rem;
+}
+.demos-lead em{
+  font-style:italic;color:var(--indigo-dark);
+  font-family:var(--font-display);font-size:1.1em;
+}
+.demo-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
+  align-items:stretch;
+}
+.demo-card{
+  display:flex;flex-direction:column;
+  background:var(--near-white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1.8rem 1.8rem 1.6rem;
+  transition:border-color 0.3s ease,box-shadow 0.3s ease,transform 0.3s ease;
+}
+.demo-card:hover{
+  border-color:rgba(91,79,207,0.35);
+  box-shadow:0 10px 28px rgba(91,79,207,0.10);
+  transform:translateY(-2px);
+}
+.demo-eyebrow{
+  font-size:0.7rem;font-weight:600;letter-spacing:0.16em;
+  text-transform:uppercase;color:var(--indigo);
+  margin-bottom:0.7rem;
+}
+.demo-card h3{
+  font-family:var(--font-display);
+  font-size:1.45rem;font-weight:700;
+  color:var(--dark);line-height:1.25;
+  letter-spacing:-0.015em;
+  margin-bottom:0.35rem;
+}
+.demo-sub{
+  font-size:0.92rem;line-height:1.5;
+  color:var(--text-muted);
+  margin-bottom:1.4rem;
+}
+.demo-card p{
+  font-size:0.95rem;line-height:1.7;
+  color:var(--text-secondary);
+  margin-bottom:1.4rem;
+}
+.demo-link{
+  margin-top:auto;
+  display:inline-flex;align-items:center;gap:0.4rem;
+  align-self:flex-start;
+  padding:0.55rem 1.25rem;
+  font-size:0.85rem;font-weight:600;
+  color:var(--white);
+  background:var(--indigo);
+  border:1px solid var(--indigo);
+  border-radius:100px;
+  text-decoration:none;
+  transition:all 0.25s ease;
+}
+.demo-link:hover{
+  background:var(--indigo-deeper);
+  border-color:var(--indigo-deeper);
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(91,79,207,0.25);
+}
+
+/* ═══ CURRENT RESEARCH — THE CENTERPIECE ═══ */
+.research{
+  background:
+    linear-gradient(160deg, var(--dark) 0%, #1E1B3A 30%, #252248 60%, var(--dark-surface) 100%);
+  color:rgba(255,255,255,0.88);
+  padding:6rem 2rem;
+  position:relative;
+  overflow:hidden;
+}
+.research::before{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse 50% 40% at 10% 90%, rgba(91,79,207,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 90% 10%, rgba(91,79,207,0.08) 0%, transparent 50%);
+  pointer-events:none;
+}
+.research .container{position:relative;z-index:1}
+.research .section-label{color:rgba(91,79,207,0.7);color:#8B80E0}
+.research .section-title{color:var(--white)}
+.research-subtitle{
+  font-family:var(--font-display);
+  font-size:clamp(1.3rem,3vw,1.65rem);
+  font-weight:600;font-style:italic;
+  color:rgba(255,255,255,0.75);
+  margin-bottom:2.5rem;
+  line-height:1.4;
+}
+.research-body p{
+  font-size:1rem;line-height:1.85;
+  color:rgba(255,255,255,0.78);
+  margin-bottom:1.5rem;
+}
+.research-body strong{color:rgba(255,255,255,0.95);font-weight:600}
+
+.research-figures{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
+  margin:3rem 0 1rem;align-items:stretch;
+}
+.research-fig{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:8px;overflow:hidden;
+  transition:border-color 0.3s ease;
+  display:flex;flex-direction:column;
+  justify-content:space-between;
+}
+.research-fig:hover{border-color:rgba(91,79,207,0.3)}
+.research-fig img{
+  width:100%;height:auto;display:block;
+  opacity:0.9;transition:opacity 0.3s ease;
+  flex:1 1 auto;object-fit:contain;
+}
+.research-fig:hover img{opacity:1}
+.fig-caption{
+  padding:0.65rem 0.85rem;
+  font-size:0.75rem;line-height:1.45;
+  color:rgba(255,255,255,0.45);
+  border-top:1px solid rgba(255,255,255,0.06);
+  flex:0 0 auto;
+}
+
+.repo-link{
+  display:inline-block;margin-top:0.5rem;
+  font-size:0.85rem;font-weight:500;
+  color:rgba(255,255,255,0.6);
+  border:1px solid rgba(255,255,255,0.15);
+  padding:0.4rem 1rem;border-radius:100px;
+  text-decoration:none;transition:all 0.25s ease;
+}
+.repo-link:hover{color:var(--white);border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06)}
+.research-project{margin-bottom:1rem}
+.research-project .section-title{margin-bottom:0.6rem}
+.research-divider{
+  width:60px;height:1px;
+  background:rgba(255,255,255,0.12);
+  margin:2.5rem 0;
+}
+.research-highlight{
+  margin-top:2.5rem;
+  padding:1.5rem 1.8rem;
+  background:rgba(91,79,207,0.08);
+  border-left:3px solid var(--indigo);
+  border-radius:0 6px 6px 0;
+  font-size:0.95rem;line-height:1.8;
+  color:rgba(255,255,255,0.82);
+  font-style:italic;
+}
+
+/* ═══ COMING SOON ═══ */
+.soon{background:var(--near-white)}
+.soon-lead{
+  font-size:1.05rem;line-height:1.8;
+  color:var(--text-secondary);max-width:740px;
+  margin-bottom:2.5rem;
+}
+.soon-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;
+  align-items:stretch;
+}
+.soon-card{
+  position:relative;
+  display:flex;flex-direction:column;
+  background:var(--white);
+  border:1px dashed var(--border);
+  border-radius:10px;
+  padding:1.6rem 1.5rem;
+  opacity:0.92;
+  transition:border-color 0.3s ease,opacity 0.3s ease;
+}
+.soon-card:hover{border-color:rgba(91,79,207,0.3);opacity:1}
+.soon-badge{
+  align-self:flex-start;
+  font-size:0.62rem;font-weight:600;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--text-muted);
+  background:var(--light);
+  padding:0.25rem 0.7rem;border-radius:100px;
+  margin-bottom:1rem;
+}
+.soon-card h3{
+  font-family:var(--font-display);
+  font-size:1.2rem;font-weight:600;
+  color:var(--text-secondary);line-height:1.3;
+  margin-bottom:0.5rem;
+}
+.soon-card p{
+  font-size:0.88rem;line-height:1.6;
+  color:var(--text-muted);
+}
+
+/* ═══ PUBLICATIONS ═══ */
+.publications{background:var(--white)}
+.pub-grid{display:flex;flex-direction:column;gap:1px}
+.pub-card{
+  display:grid;grid-template-columns:120px 1fr;gap:1.5rem;
+  padding:1.6rem 0;
+  border-bottom:1px solid rgba(0,0,0,0.05);
+  transition:background 0.25s ease;
+}
+.pub-card:first-child{border-top:1px solid rgba(0,0,0,0.05)}
+.pub-card:hover{background:rgba(91,79,207,0.015)}
+.pub-thumb{
+  width:120px;height:82px;
+  border-radius:4px;overflow:hidden;
+  background:var(--light);
+  flex-shrink:0;
+}
+.pub-thumb img{
+  width:100%;height:100%;object-fit:cover;
+  filter:saturate(0.85);
+  transition:filter 0.3s ease;
+}
+.pub-card:hover .pub-thumb img{filter:saturate(1)}
+.pub-info{min-width:0}
+.pub-citation{
+  font-size:0.92rem;line-height:1.5;
+  color:var(--text);margin-bottom:0.35rem;
+}
+.pub-citation strong{font-weight:600;color:var(--dark)}
+.pub-citation a{color:var(--text);text-decoration:none;border-bottom:1px solid var(--border);transition:border-color 0.2s ease}
+.pub-citation a:hover{border-color:var(--indigo)}
+.pub-journal{
+  font-family:var(--font-display);
+  font-style:italic;color:var(--indigo-dark);
+}
+.pub-desc{
+  font-size:0.84rem;line-height:1.6;
+  color:var(--text-muted);
+}
+.pub-tags{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.5rem}
+
+/* ═══ SKILLS ═══ */
+.skills{background:var(--near-white)}
+.skills-grid{display:flex;flex-direction:column;gap:1.8rem}
+.skill-category h3{
+  font-family:var(--font-display);
+  font-size:1.1rem;font-weight:600;
+  color:var(--dark);margin-bottom:0.7rem;
+}
+.skill-tags{display:flex;flex-wrap:wrap;gap:0.4rem}
+.skill-tag{
+  display:inline-block;
+  padding:0.35rem 0.85rem;
+  font-size:0.78rem;font-weight:500;
+  color:var(--indigo-dark);
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:100px;
+  transition:all 0.2s ease;
+  white-space:nowrap;
+}
+.skill-tag:hover{
+  background:var(--indigo);color:var(--white);
+  border-color:var(--indigo);
+  transform:translateY(-1px);
+}
+
+/* ═══ FOOTER ═══ */
+footer{
+  background:var(--dark);color:rgba(255,255,255,0.5);
+  padding:3rem 2rem;text-align:center;
+}
+.footer-links{
+  display:flex;justify-content:center;gap:1.5rem;
+  margin-bottom:1.5rem;
+}
+.footer-links a{
+  font-size:0.82rem;color:rgba(255,255,255,0.45);
+  text-decoration:none;transition:color 0.25s ease;
+}
+.footer-links a:hover{color:var(--indigo)}
+.footer-copy{font-size:0.75rem;color:rgba(255,255,255,0.3)}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.7s ease,transform 0.7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){
+  .nav-links{display:none}
+  section{padding:3.5rem 1.5rem}
+  .research{padding:4rem 1.5rem}
+  .research-figures{grid-template-columns:1fr}
+  .demo-grid{grid-template-columns:1fr}
+  .soon-grid{grid-template-columns:1fr}
+  .pub-card{grid-template-columns:80px 1fr;gap:1rem}
+  .pub-thumb{width:80px;height:56px}
+  .hero{padding:7rem 1.5rem 3rem}
+}
+@media(max-width:480px){
+  .hero-links{flex-direction:column;align-items:center}
+  .hero-links a{width:100%;justify-content:center}
+}
+
+/* ═══ MOBILE NAV TOGGLE ═══ */
+.nav-toggle{
+  display:none;background:none;border:none;cursor:pointer;
+  width:28px;height:20px;position:relative;
+}
+.nav-toggle span{
+  display:block;width:100%;height:2px;
+  background:var(--dark);position:absolute;left:0;
+  transition:all 0.25s ease;
+}
+.nav-toggle span:nth-child(1){top:0}
+.nav-toggle span:nth-child(2){top:9px}
+.nav-toggle span:nth-child(3){top:18px}
+@media(max-width:768px){
+  .nav-toggle{display:block}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ NAVIGATION ═══════════ -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-name">R. P. Wiewiora</a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#demos">Demos</a>
+      <a href="#research">Research</a>
+      <a href="#soon">Coming Soon</a>
+      <a href="#publications">Publications</a>
+    </div>
+    <button class="nav-toggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero" id="top">
+  <div class="hero-content">
+    <h1>Rafal P. Wiewiora</h1>
+    <div class="hero-links">
+      <a href="mailto:rafal.p.wiewiora@gmail.com">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+        Email
+      </a>
+      <a href="https://linkedin.com/in/rafalwiewiora" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+      <a href="https://scholar.google.com/citations?user=kOJM05UAAAAJ" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 1 0 0 14 7 7 0 0 0 0-14z"/></svg>
+        Scholar
+      </a>
+      <a href="https://github.com/rafwiewiora" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        GitHub
+      </a>
+      <a href="Rafal_Wiewiora_CV.pdf" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+        CV
+      </a>
+    </div>
+    <div class="hero-rule"></div>
+  </div>
+</header>
+
+<!-- ═══════════ ABOUT ═══════════ -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="section-label reveal">About</div>
+    <h2 class="section-title reveal">Bridging Chemistry, Simulation &amp; AI</h2>
+    <p class="about-text reveal">
+      Molecular designer with roots in experimental chemistry and chemical biology, deep experience in large-scale molecular simulation, and fluency across the physics-based and ML models used in drug design. I lead in silico design for a small-molecule allosteric program across the full discovery arc, from target assessment to lead optimization, benchmarking every prediction against experiment. Much of my work establishes where these methods genuinely advance design and where they mislead: fine-tuning ADME models on internal data, extracting chemical interpretability, and evaluating structure-prediction tools (OpenFold, Boltz) while automating both the design of candidates and the structural inputs they are scored against. Increasingly I automate the entire design loop with agentic AI&mdash;building a reusable evaluation platform spanning SAR analysis, model-accuracy tracking, and generative chemistry that lets one scientist orchestrate an agent team with the reach of a traditional CADD group.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════ INTERACTIVE DEMOS ═══════════ -->
+<section class="demos" id="demos">
+  <div class="container">
+    <div class="section-label reveal">Interactive Demos</div>
+    <h2 class="section-title reveal">Auditing models against experiment</h2>
+
+    <div class="demo-grid">
+      <div class="demo-card reveal">
+        <div class="demo-eyebrow">Demo 01</div>
+        <h3>SAR Matrix</h3>
+        <div class="demo-sub">An ML potency model, audited against experiment — where it predicts matched-pair differences well, and where it misleads.</div>
+        <a class="demo-link" href="apps/sar-matrix/index.html">Open demo &rarr;</a>
+      </div>
+
+      <div class="demo-card reveal">
+        <div class="demo-eyebrow">Demo 02</div>
+        <h3>SAR Brain</h3>
+        <div class="demo-sub">RBFE run forward along a program's real timeline — not pooled into one accuracy number — asking where each decision would have led.</div>
+        <a class="demo-link" href="apps/sar-brain/index.html">Open demo &rarr;</a>
+      </div>
+
+      <div class="demo-card reveal">
+        <div class="demo-eyebrow">Demo 03</div>
+        <h3>Generative Design Loop</h3>
+        <div class="demo-sub">A multi-agent pipeline for generative molecular design, with a medicinal chemist driving strategy each cycle.</div>
+        <a class="demo-link" href="apps/gen-loop/index.html">Open demo &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CURRENT RESEARCH ═══════════ -->
+<section class="research" id="research">
+  <div class="container">
+    <div class="section-label reveal">What I'm Currently Working On</div>
+
+    <!-- ── Agentic 1: Automated SAR & Model Accuracy ── -->
+    <div class="research-project">
+      <h2 class="section-title reveal">AI-Augmented Drug Design</h2>
+      <div class="research-subtitle reveal">Automating the medicinal-chemistry design cycle with agentic workflows in Claude Code</div>
+
+      <div class="research-body">
+        <p class="reveal">Most of my work this year runs through Claude Code. Having delegated the routine computational-chemistry tasks — docking, simulation setup, compound scoring — I have moved to building agentic workflows that automate larger sections of the discovery cycle. These include applications for automated SAR and structural-biology analysis, model-accuracy dashboards that compare every prediction against fresh experimental assay data, and an "Ask an Agent" interface for asynchronous chemistry questions. Each morning the system pulls new data, checks its own logs, flags problems, and records the reasoning behind every compound selection, so that past decisions can be revisited and learned from.</p>
+
+        <p class="reveal">The harder problem is the agentic orchestration of generative chemistry. I am building a layer that turns generative models such as REINVENT into complete design campaigns, with molecular-property models and SAR encoded directly in the reinforcement-learning reward and Claude proposing the compounds. For tightly constrained modifications this already runs semi-autonomously; the less-constrained cases still require an operator fluent in both medicinal and computational chemistry to steer it. Much of the work has been mapping where the model's chemical reasoning breaks down: it shows little intrinsic curiosity around activity cliffs, and its reliability varies considerably from one analysis to the next. Understanding these limitations, and closing them, is the focus of the work.</p>
+      </div>
+    </div>
+
+    <!-- ── Agentic 2: Datasets of Real Design Histories ── -->
+    <div class="research-project">
+      <h2 class="section-title reveal">Datasets of Real Design Histories</h2>
+      <div class="research-subtitle reveal">Reconstructing medicinal-chemistry campaigns from the literature and patent record</div>
+
+      <div class="research-body">
+        <p class="reveal">Predictive models in drug design are typically benchmarked against static datasets — collections of compound–activity measurements, such as ChEMBL records or held-out test sets, scored all at once. A drug program, however, is not a collection of measurements; it is an ordered sequence of decisions, in which each compound is made in response to what the previous ones revealed. That temporal structure — the record of how a campaign actually progressed — is almost never preserved in public data.</p>
+
+        <p class="reveal">I want to build a dataset that preserves it: extracting complete campaigns from the literature and patent record and reconstructing them as design timelines — which analog followed which, what was measured, and what was abandoned. Such a corpus would provide the benchmark that forward-in-time evaluation requires, of the kind the SAR Brain demo illustrates: any model — RBFE, co-folding affinity, or a generative loop — could be replayed against a real program's decisions to ask whether it would have helped. The same data would also serve as training signal for future affinity models, which currently have little structured SAR to learn from.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ COMING SOON ═══════════ -->
+<section class="soon" id="soon">
+  <div class="container">
+    <div class="section-label reveal">Coming Soon</div>
+    <h2 class="section-title reveal">More Tools in the Loop</h2>
+    <p class="soon-lead reveal">
+      A few more interactive tools are in the works — each one another lens on the same question of where AI earns a seat at the design table. Previews below; check back soon.
+    </p>
+
+    <div class="soon-grid">
+      <div class="soon-card reveal">
+        <div class="soon-badge">Coming Soon</div>
+        <h3>Campaign datasets from literature &amp; patents</h3>
+        <p>Extracting complete medicinal-chemistry campaigns from papers and patents to build a dataset of real design histories — to analyze with a SAR Brain–style framework across a range of models, and to serve as benchmarks and synthetic-data seeds for co-folding and co-folding-based affinity models.</p>
+      </div>
+
+      <div class="soon-card reveal">
+        <div class="soon-badge">Coming Soon</div>
+        <h3>ADME Model Explorer</h3>
+        <p>An interactive walk through where property models hold up across a design series — and where the in-silico/experiment gap quietly opens.</p>
+      </div>
+
+      <div class="soon-card reveal">
+        <div class="soon-badge">Coming Soon</div>
+        <h3>Generative Design Loop</h3>
+        <p>A live view of an agent-driven generative campaign: proposals, scoring, and the feedback that steers it toward make-worthy chemistry.</p>
+      </div>
+
+      <div class="soon-card reveal">
+        <div class="soon-badge">Coming Soon</div>
+        <h3>Affinity-Reliability Benchmarking</h3>
+        <p>A reliability dashboard that scores predictions not just on accuracy but on whether they can be trusted for the next decision.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PUBLICATIONS ═══════════ -->
+<section class="publications" id="publications">
+  <div class="container">
+    <div class="section-label reveal">Selected Publications</div>
+    <h2 class="section-title reveal">Selected Work</h2>
+
+    <div class="pub-grid">
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/stormm.jpg" alt="STORMM"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Cerutti, <strong>Wiewiora</strong> et al. (2024). <a href="https://doi.org/10.1063/5.0211032" target="_blank" rel="noopener">STORMM: GPU simulation engine for chemical simulations.</a> <span class="pub-journal">J. Chem. Phys.</span></div>
+          <div class="pub-desc">Open-source C++/CUDA engine designed to run thousands of parallel molecular calculations on a single GPU — enabling high-throughput free energy calculations and compound screening at unprecedented scale.</div>
+          <div class="pub-tags"><span class="skill-tag">STORMM</span><span class="skill-tag">FEP</span><span class="skill-tag">Virtual Screening</span><span class="skill-tag">Cloud / GPU Clusters</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/protac.jpg" alt="PROTAC"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Qiu, <strong>Wiewiora</strong> et al. (2024). <a href="https://doi.org/10.1021/jacsau.4c00503" target="_blank" rel="noopener">Non-Markovian dynamic models identify non-canonical KRAS-VHL encounter complex conformations for novel PROTAC design.</a> <span class="pub-journal">JACS Au.</span></div>
+          <div class="pub-desc">Developed simulation methods to predict the 3D structures of ternary complexes formed by molecular glue degraders — predictions later validated experimentally against crystal structures.</div>
+          <div class="pub-tags"><span class="skill-tag">Enhanced Sampling</span><span class="skill-tag">Markov State Models</span><span class="skill-tag">Structure Prediction</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/lss.png" alt="Latent Space Simulators"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Jones, McDargh, <strong>Wiewiora</strong> et al. (2023). <a href="https://doi.org/10.1021/acs.jpca.3c01362" target="_blank" rel="noopener">Molecular latent space simulators for distributed trajectories.</a> <span class="pub-journal">J. Phys. Chem. A</span>, 127, 5470–5490.</div>
+          <div class="pub-desc">A machine learning framework that learns continuous dynamical models in latent space from distributed simulation data, generating synthetic trajectories that capture the slow conformational motions relevant to drug design.</div>
+          <div class="pub-tags"><span class="skill-tag">Enhanced Sampling</span><span class="skill-tag">Markov State Models</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/tpd.png" alt="Targeted Protein Degradation"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Dixon … <strong>Wiewiora</strong> … Izaguirre (2022). <a href="https://doi.org/10.1038/s41467-022-33575-4" target="_blank" rel="noopener">Predicting structural basis of targeted protein degradation.</a> <span class="pub-journal">Nature Comm.</span>, 13:5884.</div>
+          <div class="pub-desc">Combined molecular simulation with hydrogen-deuterium exchange and NMR experiments to predict how drugs bring two proteins together — enabling rational design of targeted protein degraders.</div>
+          <div class="pub-tags"><span class="skill-tag">Structure Prediction</span><span class="skill-tag">Hydrogen–Deuterium Exchange</span><span class="skill-tag">NMR</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/covid.png" alt="COVID-19"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Zimmerman … <strong>Wiewiora</strong> … Bowman (2020). <a href="https://doi.org/10.1038/s41557-021-00707-0" target="_blank" rel="noopener">SARS-CoV-2 simulations go exascale.</a> <span class="pub-journal">Nature Chemistry</span>, 13, 651–659.</div>
+          <div class="pub-desc">The first exascale molecular dynamics campaign: 280,000 GPUs simulating the entire SARS-CoV-2 proteome, revealing hidden druggable binding sites invisible to static structures.</div>
+          <div class="pub-tags"><span class="skill-tag">Folding@home</span><span class="skill-tag">Cloud / GPU Clusters</span><span class="skill-tag">Enhanced Sampling</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/mlff_fig1.jpg" alt="ML Force Fields"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Gkeka … <strong>Wiewiora</strong>, Leli&egrave;vre (2020). <a href="https://doi.org/10.1021/acs.jctc.0c00355" target="_blank" rel="noopener">ML force fields and coarse-grained variables in molecular dynamics.</a> <span class="pub-journal">JCTC</span>, 16, 4757–4775.</div>
+          <div class="pub-desc">A comprehensive review of how neural networks can learn to replace physics-based molecular energy models, covering machine-learned force fields and learned collective variables for enhanced sampling.</div>
+          <div class="pub-tags"><span class="skill-tag">QM/NNPs in Design</span><span class="skill-tag">Enhanced Sampling</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/msm.jpg" alt="Markov State Models"></div>
+        <div class="pub-info">
+          <div class="pub-citation"><strong>Wiewiora*</strong>, Su&aacute;rez* et al. (2020). <a href="https://doi.org/10.1021/acs.jctc.0c01154" target="_blank" rel="noopener">What Markov state models can and cannot do.</a> <span class="pub-journal">JCTC</span>, 17, 3119–3133.</div>
+          <div class="pub-desc">A critical assessment of Markov state models — the field's standard method for analyzing molecular simulation data — establishing when they work, when they mislead, and best practices for their use. Now a widely cited reference.</div>
+          <div class="pub-tags"><span class="skill-tag">Markov State Models</span><span class="skill-tag">Model Benchmarking</span><span class="skill-tag">Python</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/setd8.jpg" alt="SETD8"></div>
+        <div class="pub-info">
+          <div class="pub-citation"><strong>Wiewiora*</strong>, Chen* et al. (2019). <a href="https://doi.org/10.7554/eLife.45403" target="_blank" rel="noopener">Dynamic conformational landscapes of SETD8.</a> <span class="pub-journal">eLife</span>, 8, e45403.</div>
+          <div class="pub-desc">Generated approximately 50 milliseconds of GPU simulation (10,000+ GPU-years) to map 24 previously hidden conformational states of a cancer-relevant methyltransferase, revealing an allosteric mechanism for drug targeting.</div>
+          <div class="pub-tags"><span class="skill-tag">Enhanced Sampling</span><span class="skill-tag">OpenMM</span><span class="skill-tag">Markov State Models</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/openmm.png" alt="OpenMM"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Eastman … <strong>Wiewiora, R.P.</strong> … Pande (2017). <a href="https://doi.org/10.1371/journal.pcbi.1005659" target="_blank" rel="noopener">OpenMM 7.</a> <span class="pub-journal">PLOS Comp. Biol.</span>, 13, e1005659.</div>
+          <div class="pub-desc">Core contributor to OpenMM, the most widely used GPU-accelerated molecular simulation engine, used by thousands of researchers worldwide for drug design and biophysics.</div>
+          <div class="pub-tags"><span class="skill-tag">OpenMM</span><span class="skill-tag">Python</span><span class="skill-tag">Cloud / GPU Clusters</span></div>
+        </div>
+      </div>
+
+      <div class="pub-card reveal">
+        <div class="pub-thumb"><img src="images/science.png" alt="Post-translational Mutagenesis"></div>
+        <div class="pub-info">
+          <div class="pub-citation">Wright … <strong>Wiewiora</strong> … Davis (2016). <a href="https://doi.org/10.1126/science.aag1465" target="_blank" rel="noopener">Post-translational mutagenesis.</a> <span class="pub-journal">Science</span>, 354, aag1465.</div>
+          <div class="pub-desc">Experimental chemistry at the protein-chemistry interface: a novel method for engineering protein building blocks through post-translational chemical modification, published in Science.</div>
+          <div class="pub-tags"><span class="skill-tag">Synthetic Chemistry</span><span class="skill-tag">Chemical Biology</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="footer-links">
+    <a href="mailto:rafal.p.wiewiora@gmail.com">Email</a>
+    <a href="https://linkedin.com/in/rafalwiewiora" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://scholar.google.com/citations?user=kOJM05UAAAAJ" target="_blank" rel="noopener">Google Scholar</a>
+    <a href="https://github.com/rafwiewiora" target="_blank" rel="noopener">GitHub</a>
+    <a href="Rafal_Wiewiora_CV.pdf" target="_blank" rel="noopener">CV</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 Rafal P. Wiewiora</div>
+</footer>
+
+<script>
+// Nav scroll effect
+const nav = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+}, {passive: true});
+
+// Reveal on scroll
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), i * 60);
+      observer.unobserve(entry.target);
+    }
+  });
+}, {threshold: 0.12, rootMargin: '0px 0px -40px 0px'});
+reveals.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

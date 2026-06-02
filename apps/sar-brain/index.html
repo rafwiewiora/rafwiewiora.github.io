@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>SAR Brain — design timeline</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  body { font-family: Inter, system-ui, sans-serif; margin: 0; background: #f8f9fb; color: #1e293b; font-size: 14px; }
+  .hdr { background: #0f172a; color: #f8fafc; padding: 14px 22px; font-size: 18px; font-weight: 700; }
+  .hdr span { font-weight: 400; font-size: 13px; color: #94a3b8; margin-left: 14px; }
+  .ctl { padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 16px 20px; align-items: flex-end;
+         background: #fff; border-bottom: 1px solid #e2e6ea; }
+  .ctl label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #475569; font-weight: 600; }
+  .ctl select, .ctl input[type=number], .ctl input[type=text] {
+         font-family: inherit; font-size: 14px; padding: 6px 10px; border: 1px solid #cbd5e1;
+         border-radius: 6px; background: #fff; color: #1e293b; }
+  .ctl input[type=range] { width: 150px; }
+  .ctl button { font-family: inherit; font-size: 13px; font-weight: 600; padding: 7px 14px;
+         border-radius: 6px; border: 1px solid #2563eb; background: #2563eb; color: #fff; cursor: pointer; }
+  .ctl .rangeval { font-weight: 700; color: #2563eb; }
+  .intro { padding: 11px 22px; background: #f1f5f9; border-bottom: 1px solid #e2e6ea;
+           font-size: 13px; line-height: 1.5; color: #334155; max-width: 1100px; }
+  /* guided story bar */
+  .story { display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+           background: #eff3ff; border-bottom: 1px solid #d7e0f5; }
+  .story button { font-family: inherit; font-size: 13px; font-weight: 600; padding: 6px 14px;
+                  border-radius: 6px; border: 1px solid #2563eb; background: #2563eb; color: #fff;
+                  cursor: pointer; }
+  .story button:disabled { opacity: 0.4; cursor: default; }
+  .story .step { font-weight: 700; color: #2563eb; font-size: 13px; min-width: 46px; text-align: center; }
+  .story .cap { flex: 1; font-size: 13.5px; color: #1e293b; line-height: 1.45; }
+  .story .cap b { color: #0f172a; }
+  /* main layout: plot column + docked summary sidebar (never overlaps points) */
+  .main { display: flex; align-items: stretch; }
+  #plot { flex: 1 1 auto; height: calc(100vh - 124px); min-width: 0; }
+  .sidebar { flex: 0 0 320px; max-width: 320px; border-left: 1px solid #e2e6ea; background: #fff;
+         padding: 16px 18px; overflow-y: auto; height: calc(100vh - 124px); }
+  .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8;
+         margin: 0 0 8px; font-weight: 700; }
+  .card { border: 1px solid #e2e6ea; border-radius: 10px; padding: 13px 15px; margin-bottom: 16px; }
+  .card .c-hdr { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 3px; }
+  .card .c-sub { font-size: 13px; color: #64748b; margin-bottom: 9px; line-height: 1.5; }
+  .card .c-body { font-size: 13.5px; line-height: 1.7; color: #475569; }
+  .card .c-body .k { color: #94a3b8; }
+  .muted { color: #94a3b8; font-size: 12.5px; }
+  .legend { font-size: 12.5px; color: #475569; }
+  .legend div { display: flex; align-items: center; gap: 7px; margin: 4px 0; }
+  .legend .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .banner { display:none; align-items:center; gap:10px; background:#fff7ed; border:1px solid #fed7aa;
+            color:#9a3412; padding:11px 18px; font-size:14px; }
+  .banner.show { display:flex; }
+  #tt { display:none; position:fixed; z-index:200; background:#fff; border:1px solid #cbd5e1;
+        border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.15); padding:11px; font-size:13px;
+        max-width:340px; pointer-events:none; }
+  #tt-id { font-size:15px; font-weight:700; margin-bottom:5px; color:#0f172a; }
+  #tt-info { line-height:1.65; color:#475569; }
+  .hide { display:none !important; }
+</style>
+</head><body>
+<div class="hdr">SAR Brain — design timeline
+  <span>Compounds over time · colored by affinity · model-trusted vs explore policies</span>
+</div>
+<div class="intro">A relative binding free-energy (RBFE) model, evaluated the way it's actually used.
+  The usual scorecard pools a whole project's calculations into one retrospective accuracy number — but
+  that's not the question a program faces. What matters is <b>(a) the timeline</b> — what the model knew
+  at each point, scored only against the references already made — and <b>(b) the path</b> a decision made
+  with the model <i>at that moment</i> would, or wouldn't, have put you on next. This runs RBFE forward as a
+  design policy over a real program. Step through (← / →): trust the model, override it on the crucial calls,
+  or explore — and see where each strategy actually lands.</div>
+<div class="ctl">
+  <label>View
+    <select id="f-view" onchange="onViewChange()">
+      <option value="timeline" selected>Timeline</option>
+      <option value="efficiency">Strategy efficiency</option>
+    </select>
+  </label>
+  <!-- PUBLIC version: X=assay time, edges=reference, no explore, no highlight.
+       Hidden inputs preserve the values the shared JS reads. -->
+  <input type="hidden" id="f-time" value="date">
+  <input type="hidden" id="f-edges" value="rbfe">
+  <input type="hidden" id="f-budget" value="0">
+  <input type="hidden" id="f-highlight" value="">
+  <!-- Timeline-only controls (policy = ddG cutoff + expert overrides).
+       Y-axis is always RBFE ΔΔG; the metric is fixed (hidden input below). -->
+  <input type="hidden" id="f-metric" value="ddG">
+  <label>Make ddG ≤ T (model-trusted)
+    <input type="text" id="f-cutoff" placeholder="off" value="" size="6"
+           style="width:84px" oninput="render()">
+  </label>
+  <label>Expert overrides (N crucial compounds)
+    <input type="number" id="f-passes" value="0" min="0" max="12" step="1"
+           style="width:64px" oninput="render()">
+  </label>
+  <!-- Efficiency-only controls -->
+  <label class="eff-ctl hide">Potency target
+    <select id="f-thresh" onchange="render()">
+      <option value="9" selected>pIC50 ≥ 9 (best-in-class)</option>
+      <option value="8">pIC50 ≥ 8 (potent bulk)</option>
+    </select>
+  </label>
+</div>
+<div class="story" id="story">
+  <button id="story-prev" onclick="storyNav(-1)">← Prev</button>
+  <span class="step" id="story-step">1 / 5</span>
+  <button id="story-next" onclick="storyNav(1)">Next →</button>
+  <span class="cap" id="story-cap"></span>
+</div>
+<div class="banner" id="banner"><span>🔒</span>
+  <span><b>Data not found.</b> The committed <code>data/brain.json</code> is missing.</span></div>
+<div class="main" id="main-timeline">
+  <div id="plot"></div>
+  <div class="sidebar">
+    <!-- Policy / lineage summary card (docked — never overlaps points) -->
+    <div id="summary-card" class="card hide">
+      <div class="c-hdr" id="sc-hdr"></div>
+      <div class="c-sub" id="sc-sub"></div>
+      <div class="c-body" id="sc-body"></div>
+    </div>
+    <h2>Legend</h2>
+    <div class="legend" id="legend">
+      <div id="legend-buckets"></div>
+      <div><span class="dot" style="background:#0f172a;border:2px solid #16a34a"></span> Root (no parent)</div>
+      <div><span class="dot" style="background:#0f172a;border:2px solid #7c3aed"></span> Campaign seed (RBFE root anchor)</div>
+      <div><span style="color:#eab308;font-size:14px">★</span> Expert override (crucial RBFE-rejected compound)</div>
+      <div><span style="display:inline-block;width:20px;border-top:2px solid #94a3b8"></span> edge: reference → design (the made reference each compound was scored against)</div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <span style="display:flex;gap:2px">
+          <span class="dot" style="background:#16a34a;opacity:0.30"></span>
+          <span class="dot" style="background:#16a34a;opacity:0.60"></span>
+          <span class="dot" style="background:#16a34a;opacity:1"></span>
+        </span> opacity = how often made under policy</div>
+      <div class="muted" style="margin-left:1px">absent = made in &lt;5% of draws / never</div>
+      <div style="margin-top:6px" class="muted" id="shown"></div>
+    </div>
+  </div>
+</div>
+<div id="main-efficiency" class="hide" style="padding:8px 20px 0">
+  <div id="effplot" style="width:100%;height:calc(100vh - 190px)"></div>
+  <div id="eff-caption" style="font-size:14px;color:#334155;margin-top:6px;line-height:1.5"></div>
+  <div id="eff-readout" class="muted" style="font-size:12.5px;margin-top:4px"></div>
+</div>
+<div id="tt">
+  <div id="tt-id"></div>
+  <div id="tt-svg" style="text-align:center;margin-bottom:7px"></div>
+  <div id="tt-info"></div>
+</div>
+<script>
+// ── Metric registry — RBFE ΔΔG ONLY (the timeline y-axis is always ΔΔG) ───────
+const GREEN = '#16a34a', YELLOW = '#eab308', AMBER = '#f59e0b', RED = '#dc2626';
+const INF = Infinity;
+const METRICS = {
+  ddG:   { key:'ddG', label:'RBFE ΔΔG (kcal/mol)', unit:' kcal/mol', yrange:[5.5, -5.5], invert:true, zeroLine:true,
+           buckets: [[1.5, RED],[0.0, AMBER],[-INF, GREEN]],
+           value: n => n.ddG },
+};
+
+let NODES = [];
+const BY_ID = {};
+let SVGS = {};
+
+// OBVIOUS: always-tested cross-series compounds (givens, not policy products).
+// PUBLIC: derived from the `obvious` flag in the opaque data (no real ids here).
+const OBVIOUS = new Set();
+const isObvious = id => OBVIOUS.has(id);
+const OBVIOUS_GREY = '#cbd5e1';
+
+// SEEDS: campaign founding root anchors (distinct from OBVIOUS). Auto-derived:
+// unscored (ddG==null), not obvious, and used as an RBFE reference by ≥1 node.
+const SEEDS = new Set();
+const isSeed = id => SEEDS.has(id);
+const isGiven = id => isObvious(id) || isSeed(id);   // givens excluded from "best"
+function deriveSeeds() {
+  OBVIOUS.clear();
+  for (const n of NODES) { if (n.obvious) OBVIOUS.add(n.id); }
+  SEEDS.clear();
+  const usedAsRef = new Set();
+  for (const n of NODES) { if (n.ref) usedAsRef.add(n.ref); }
+  for (const n of NODES) {
+    if (n.ddG == null && !isObvious(n.id) && usedAsRef.has(n.id)) SEEDS.add(n.id);
+  }
+}
+
+function metricValue(n, m) {
+  const v = m.value(n);
+  return (v === undefined || v === null || Number.isNaN(v)) ? null : v;
+}
+function metricColor(v, m) {
+  if (v == null) return '#94a3b8';
+  for (const [thr, c] of m.buckets) { if (v >= thr) return c; }
+  return m.buckets[m.buckets.length - 1][1];
+}
+function nodeDate(n) {
+  const mode = document.getElementById('f-time').value;
+  return mode === 'rbfe' ? (n.rbfe_date || null) : (n.date || null);
+}
+// ISO-week-ish bucket key: year + week number of the node's active-axis date.
+function weekKey(n) {
+  const d = nodeDate(n);
+  if (!d) return null;
+  const dt = new Date(d);
+  const onejan = new Date(dt.getUTCFullYear(), 0, 1);
+  const wk = Math.floor((((dt - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  return dt.getUTCFullYear() + '-W' + wk;
+}
+
+function activeEdgeField() {
+  return document.getElementById('f-edges').value === 'rbfe' ? 'ref' : 'parent';
+}
+function getAncestors(id, field) {
+  field = field || activeEdgeField();
+  const chain = new Set(); let cur = id;
+  while (cur && BY_ID[cur] && !chain.has(cur)) { chain.add(cur); cur = BY_ID[cur][field]; }
+  return chain;
+}
+function getDescendants(id, field) {
+  field = field || activeEdgeField();
+  const desc = new Set(); const q = [id];
+  while (q.length) {
+    const cur = q.shift();
+    NODES.forEach(n => { if (n[field] === cur && !desc.has(n.id)) { desc.add(n.id); q.push(n.id); } });
+  }
+  return desc;
+}
+
+// Deterministic PRNG (mulberry32) so identical (T, budget) settings reproduce
+// byte-identical Monte-Carlo results — no fluctuation across re-renders.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// Stable integer seed from the policy settings (string → hash).
+function seedFromSettings(s) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+// Map a made-frequency (or edge freq-product) to opacity. sqrt boosts low-but-
+// nonzero values into clear visibility, up to 1.0 solid at freq 1. Values below
+// MIN_VISIBLE_FREQ are hidden by the caller (not passed here).
+function freqOpacity(f) { return 0.25 + 0.75 * Math.sqrt(f); }
+
+// In explore mode (budget > 0), declutter the barely-reachable tail: a non-given
+// compound (or edge) with made-frequency below this is hidden, treated as never
+// made. With N=200 draws ~everything reachable has freq > 0, so an exact-0 hide
+// doesn't declutter; this small floor does. Tunable.
+const MIN_VISIBLE_FREQ = 0.05;
+
+// ── Combined ADDITIVE policy: ddG cutoff (base) + optional explore budget ─────
+// Reference-aware made-this-draw rule:
+//   made(C) = given(SEED/OBVIOUS)
+//             OR ( madeRef(C) AND ( ddG(C) ≤ T  OR  funded-this-draw(C) ) )
+// with madeRef = reference made-this-draw (off-graph/null ref → true), resolved
+// to a fixpoint each draw so that funding a model-SKIPPED crossing (ddG > T)
+// unlocks its FAVORABLE (ddG ≤ T) descendants deterministically that same draw.
+//
+// budget = 0  → no funding → pure deterministic cutoff: every freq is 0 or 1.
+// budget > 0  → Monte Carlo over `draws`; returns id -> made-frequency.
+// `forced` (free-pass overrides): scored nodes made regardless of the cutoff,
+// AS LONG AS their reference chain is also made. They terminate the cutoff test
+// like favorable nodes do, so their favorable subtree unlocks automatically.
+// Week buckets are invariant across the cutoff sweep (depend only on NODES + the
+// active time axis). Memoize so the locus doesn't rebuild them 292× per render.
+let _WEEKS = null, _WEEKS_KEY = null;
+function weekBuckets() {
+  const key = NODES.length + '|' + document.getElementById('f-time').value;
+  if (_WEEKS && _WEEKS_KEY === key && _WEEKS.forNodes === NODES) return _WEEKS;
+  const weeks = new Map();
+  for (const n of NODES) {
+    const wk = weekKey(n);
+    if (wk == null) continue;
+    if (!weeks.has(wk)) weeks.set(wk, []);
+    weeks.get(wk).push(n);
+  }
+  _WEEKS = { weeks, sorted: [...weeks.keys()].sort(), forNodes: NODES };
+  _WEEKS_KEY = key;
+  return _WEEKS;
+}
+function policyFrequencies(T, budgetPct, draws, forced) {
+  forced = forced || EMPTY_SET;
+  const tActive = T != null && !Number.isNaN(T);
+  const wb = weekBuckets();
+  const weeks = wb.weeks, weekKeysSorted = wb.sorted;
+  const p = (budgetPct || 0) / 100;
+  const nDraws = p > 0 ? draws : 1;             // budget 0 = single deterministic pass
+
+  // Seeded RNG: identical (T, budget, draws) → identical sequence → stable result.
+  const rng = mulberry32(seedFromSettings(`${T}|${budgetPct}|${nDraws}`));
+
+  const freq = new Map();
+  NODES.forEach(n => freq.set(n.id, 0));
+
+  for (let d = 0; d < nDraws; d++) {
+    // Funded set this draw (only when budget > 0).
+    const funded = new Set();
+    if (p > 0) {
+      for (const wk of weekKeysSorted)
+        for (const n of weeks.get(wk)) {
+          if (n.ddG == null) continue;          // budget% applies to RBFE-SCORED only
+          if (rng() < p) funded.add(n.id);
+        }
+    }
+    // Made-this-draw fixpoint.
+    const made = new Set();
+    for (const n of NODES) if (isGiven(n.id)) made.add(n.id);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const wk of weekKeysSorted) {
+        for (const n of weeks.get(wk)) {
+          if (made.has(n.id)) continue;
+          if (n.ddG == null) continue;          // unscored non-given never made
+          const passes = (tActive && n.ddG <= T) || funded.has(n.id) || forced.has(n.id);
+          if (!passes) continue;                // not favorable, not funded, not overridden
+          const refMade = (!n.ref || !BY_ID[n.ref]) ? true : made.has(n.ref);
+          if (refMade) { made.add(n.id); changed = true; }
+        }
+      }
+    }
+    made.forEach(id => freq.set(id, freq.get(id) + 1));
+  }
+  const out = new Map();
+  freq.forEach((c, id) => out.set(id, c / nDraws));
+  return out;
+}
+const EMPTY_SET = new Set();
+
+// ── Precomputed ref-graph (invariant across the whole cutoff sweep) ───────────
+// The made-set rule is monotone reachability over the single-parent `ref` graph
+// (acyclic; off-graph/null ref behaves as an always-made root). Precompute, once
+// per NODES identity: the given roots, ref→children adjacency, and the "root-made"
+// flag (no in-graph ref). This turns the per-call O(nodes × fixpoint-passes) scan
+// into a near-linear worklist propagation, and is reused by every cutoff/candidate.
+let _GRAPH = null, _GRAPH_FOR = null;
+function refGraph() {
+  if (_GRAPH && _GRAPH_FOR === NODES) return _GRAPH;
+  const children = new Map();           // ref id → [scored child nodes]
+  const givenIds = [];                  // given ids (always made)
+  for (const n of NODES) {
+    if (isGiven(n.id)) givenIds.push(n.id);
+    if (n.ddG == null) continue;        // unscored non-given can never be made
+    const rootMade = !n.ref || !BY_ID[n.ref];   // off-graph/null ref → ref always made
+    n._rootMade = rootMade;
+    if (!rootMade) {
+      let arr = children.get(n.ref);
+      if (!arr) children.set(n.ref, (arr = []));
+      arr.push(n);
+    }
+  }
+  _GRAPH = { children, givenIds };
+  _GRAPH_FOR = NODES;
+  return _GRAPH;
+}
+
+// Deterministic reference-aware made-set (no explore) at cutoff T with a set of
+// forced overrides. Returns a Set of made ids. (Worklist reachability — identical
+// result to the prior fixpoint scan, but linear in nodes+edges per call.)
+function deterministicMade(T, forced) {
+  forced = forced || EMPTY_SET;
+  const tActive = T != null && !Number.isNaN(T);
+  const { children, givenIds } = refGraph();
+  const passes = n => (tActive && n.ddG <= T) || forced.has(n.id);
+  const made = new Set();
+  const queue = [];
+  // seed: givens (always made) + scored roots (no in-graph ref) that pass
+  for (const id of givenIds) { if (!made.has(id)) { made.add(id); queue.push(id); } }
+  for (const n of NODES) {
+    if (n.ddG == null || !n._rootMade || made.has(n.id)) continue;
+    if (passes(n)) { made.add(n.id); queue.push(n.id); }
+  }
+  // propagate: when a node is made, its passing children become made
+  for (let qi = 0; qi < queue.length; qi++) {
+    const kids = children.get(queue[qi]);
+    if (!kids) continue;
+    for (const c of kids) {
+      if (made.has(c.id)) continue;
+      if (passes(c)) { made.add(c.id); queue.push(c.id); }
+    }
+  }
+  return made;
+}
+
+// Greedy max-coverage free passes: N times, override the RBFE-rejected node
+// (ddG > T, not yet made, whose own reference IS made → actually addable) whose
+// addition unlocks the most new made compounds (itself + favorable subtree, to
+// fixpoint). Ties: higher pic50, then lower ddG. Returns the ordered list of
+// {id, unlock} picks. (Deterministic; uses the no-explore made-set as the base
+// for selection so picks are stable regardless of budget.)
+function greedyFreePasses(T, N) {
+  const tActive = T != null && !Number.isNaN(T);
+  const { children } = refGraph();
+  const forced = new Set();
+  const picks = [];
+  for (let k = 0; k < N; k++) {
+    const base = deterministicMade(T, forced);
+    const passes = n => (tActive && n.ddG <= T) || forced.has(n.id);
+    let best = null;
+    for (const n of NODES) {
+      const id = n.id;
+      if (base.has(id) || n.ddG == null) continue;
+      if (tActive && n.ddG <= T) continue;                 // not rejected
+      const refMade = (!n.ref || !BY_ID[n.ref]) ? true : base.has(n.ref);
+      if (!refMade) continue;                              // not addable yet
+      // Marginal unlock of forcing `id` (== |deterministicMade(forced∪{id})| − |base|):
+      // forcing `id` makes it, then its descendants that pass on their own and chain
+      // through passing nodes. Local forward walk over the ref tree — no global recompute.
+      let unlock = 1;
+      const seen = new Set([id]); const stack = [id];
+      while (stack.length) {
+        const kids = children.get(stack.pop());
+        if (!kids) continue;
+        for (const c of kids) {
+          if (base.has(c.id) || seen.has(c.id) || !passes(c)) continue;
+          seen.add(c.id); stack.push(c.id); unlock++;
+        }
+      }
+      const key = [unlock, (n.pic50 == null ? -99 : n.pic50), -n.ddG];
+      if (!best || key[0] > best.key[0] ||
+          (key[0] === best.key[0] && key[1] > best.key[1]) ||
+          (key[0] === best.key[0] && key[1] === best.key[1] && key[2] > best.key[2])) {
+        best = { id, unlock, key };
+      }
+    }
+    if (!best) break;
+    forced.add(best.id);
+    picks.push({ id: best.id, unlock: best.unlock });
+  }
+  return picks;
+}
+
+function renderLegend(m) {
+  const el = document.getElementById('legend-buckets');
+  if (m.key === 'ddG') {
+    el.innerHTML =
+      '<div><b>RBFE ΔΔG (favorable ↑)</b></div>' +
+      '<div><span class="dot" style="background:#16a34a"></span> ΔΔG &lt; 0</div>' +
+      '<div><span class="dot" style="background:#f59e0b"></span> ΔΔG 0–1.5</div>' +
+      '<div><span class="dot" style="background:#dc2626"></span> ΔΔG ≥ 1.5</div>';
+    return;
+  }
+  const lines = ['<div><b>' + m.label + '</b></div>'];
+  const bks = m.buckets;
+  for (let i = 0; i < bks.length; i++) {
+    const [thr, c] = bks[i];
+    let label;
+    if (i === 0) label = '≥ ' + thr;
+    else if (i === bks.length - 1) label = '&lt; ' + bks[i - 1][0];
+    else label = bks[i][0] + '–' + bks[i - 1][0];
+    lines.push('<div><span class="dot" style="background:' + c + '"></span> ' + label + m.unit + '</div>');
+  }
+  el.innerHTML = lines.join('');
+}
+
+// "Great ADME" = good metabolic stability (stored `adme` is a generic stability
+// score, higher = better; the great threshold is adme > -2.0).
+const GREAT_ADME = n => n.adme != null && n.adme > -2.0;
+
+// The success universe is RBFE-SCORED (ddg != null), NON-GIVEN compounds ONLY.
+// Compounds without an RBFE score do not exist for any count or denominator.
+const isScoredProduct = n => n.ddG != null && !isGiven(n.id);
+
+// Per-bar totals over the RBFE-scored non-given universe — the recovery-fraction
+// denominators: count-made / total-in-universe. Computed, not hardcoded.
+function libraryTotals() {
+  const products = NODES.filter(isScoredProduct);
+  return {
+    ge8:   products.filter(n => n.pic50 != null && n.pic50 >= 8).length,
+    ge9:   products.filter(n => n.pic50 != null && n.pic50 >= 9).length,
+    great: products.filter(GREAT_ADME).length,
+  };
+}
+
+// Best-affinity + quality-tier summary over a set, EXCLUDING givens from the
+// best-of and tier counts (consistent with best-affinity). `totalForPct`, when
+// given, drives the "% of all compounds made" cost line (made = members size).
+function summarizeAffinity(members, totalForPct) {
+  const products = members.filter(n => !isGiven(n.id));   // policy products only
+  const bestBy = (arr, pick, cmp) => {
+    let bv = null, bid = null;
+    for (const n of arr) {
+      const v = pick(n);
+      if (v == null || Number.isNaN(v)) continue;
+      if (bv == null || cmp(v, bv)) { bv = v; bid = n.id; }
+    }
+    return bid ? { v: bv, id: bid } : null;
+  };
+  const bestPic = bestBy(products, n => n.pic50, (a, b) => a > b);   // non-given best potency
+  const bestDdg = bestBy(products, n => n.ddG,   (a, b) => a < b);   // non-given best ΔΔG
+  // Tier counts: RBFE-SCORED non-given only (non-RBFE compounds don't count).
+  const scoredProducts = members.filter(isScoredProduct);
+  const nPotent = scoredProducts.filter(n => n.pic50 != null && n.pic50 >= 8).length;
+  const nExcel  = scoredProducts.filter(n => n.pic50 != null && n.pic50 >= 9).length;
+  const nGreatAdme = scoredProducts.filter(GREAT_ADME).length;
+  // Recovery fraction: count / (total non-given compounds in the FULL library
+  // meeting that bar), shown as a PERCENT ONLY (never the absolute population
+  // count or its denominator). 100% = recovered everything of that quality.
+  const lib = libraryTotals();
+  const row = (k, x, fmt) => `<div><span class="k">${k}</span> ` +
+    (x ? `<b>${fmt(x.v)}</b> <span class="k">(${x.id})</span>` : '—') + '</div>';
+  const cnt = (k, v) => `<div style="color:#334155">${k}: <b>${v}</b></div>`;
+  const cntPct = (k, v, total) =>
+    `<div style="color:#334155">${k}: <b>${total ? (v / total * 100).toFixed(0) + '%' : '—'}</b></div>`;
+  const grpHdr = t => `<div style="font-weight:600;color:#94a3b8;text-transform:uppercase;` +
+    `letter-spacing:.04em;font-size:11px;margin:9px 0 2px">${t}</div>`;
+  // Cost line (only for the policy made-set). % is over the RBFE-SCORED set:
+  // (# made compounds with ddg != null) / (# library compounds with ddg != null).
+  // Givens without RBFE aren't counted in numerator or denominator, so % ≤ 100%.
+  let costHtml = '';
+  if (totalForPct) {
+    const scoredTotal = NODES.filter(n => n.ddG != null).length;
+    const madeScored = members.filter(n => n.ddG != null).length;
+    const pct = scoredTotal ? (madeScored / scoredTotal * 100) : 0;
+    costHtml = grpHdr('Cost') +
+      `<div style="color:#334155">made: <b>${members.length}</b> · ` +
+      `<b>${pct.toFixed(1)}%</b> of RBFE-scored</div>`;
+  }
+  return {
+    bestPic, nProducts: products.length, nPotent, nExcel, nGreatAdme,
+    html:
+      costHtml +
+      grpHdr('Best reachable (excludes givens)') +
+      row('pIC50 (max)', bestPic, v => v.toFixed(2)) +
+      row('ΔΔG (min, best)', bestDdg, v => (v > 0 ? '+' : '') + v.toFixed(2)) +
+      grpHdr('Potency tiers') +
+      cntPct('Potent (pIC50 ≥ 8)', nPotent, lib.ge8) +
+      cntPct('Excellent (pIC50 ≥ 9)', nExcel, lib.ge9) +
+      grpHdr('ADME') +
+      cntPct('Great ADME', nGreatAdme, lib.great),
+  };
+}
+
+// Expected-yield summary for EXPLORE mode: tiers are Σ(made-frequency) over the
+// compounds meeting each criterion, "X of Y" where Y = library achievable max.
+// Best reachable = highest-pIC50 non-given with freq>0, annotated with its freq.
+function summarizeExpectedYield(freqOf) {
+  const scored = NODES.filter(n => n.ddG != null);
+  const scoredTotal = scored.length;
+  const expMadeScored = scored.reduce((s, n) => s + freqOf(n), 0);
+  // Universe = RBFE-scored non-given compounds only (non-RBFE don't count).
+  const products = NODES.filter(isScoredProduct);
+  const expSum = pred => products.reduce((s, n) => s + (pred(n) ? freqOf(n) : 0), 0);
+  const maxOf   = pred => products.filter(pred).length;
+  const pPot = n => n.pic50 != null && n.pic50 >= 8;
+  const pExc = n => n.pic50 != null && n.pic50 >= 9;
+  const pGrt = n => GREAT_ADME(n);
+  // Best reachable: highest-pIC50 non-given with any made-probability.
+  let best = null;
+  for (const n of products) {
+    if (n.pic50 == null || freqOf(n) <= 0) continue;
+    if (!best || n.pic50 > best.pic50) best = n;
+  }
+  const reliablyMade = NODES.filter(n => freqOf(n) > 0.5).length;
+  const grpHdr = t => `<div style="font-weight:600;color:#94a3b8;text-transform:uppercase;` +
+    `letter-spacing:.04em;font-size:11px;margin:9px 0 2px">${t}</div>`;
+  // Recovery fraction: expected made meeting the bar / library total at that bar,
+  // shown as a PERCENT ONLY (never the absolute population count or denominator).
+  const tier = (k, pred) => {
+    const v = expSum(pred), total = maxOf(pred);
+    const pct = total ? (v / total * 100).toFixed(0) + '%' : '—';
+    return `<div style="color:#334155">${k}: <b>${pct}</b></div>`;
+  };
+  return {
+    html:
+      grpHdr('Expected yield (Σ made-probability)') +
+      `<div style="color:#334155">% made: <b>${(expMadeScored / scoredTotal * 100).toFixed(1)}%</b> ` +
+      `<span class="k">of RBFE-scored</span></div>` +
+      grpHdr('Potency tiers (expected)') +
+      tier('≥ 8 (potent)', pPot) +
+      tier('≥ 9 (excellent)', pExc) +
+      grpHdr('ADME (expected)') +
+      tier('great ADME', pGrt) +
+      grpHdr('Best reachable (excludes givens)') +
+      (best
+        ? `<div><b>${best.pic50.toFixed(2)}</b> <span class="k">(${best.id} · made ${(freqOf(best) * 100).toFixed(0)}% of draws)</span></div>`
+        : '<div>—</div>') +
+      `<div class="k" style="margin-top:6px">reliably made (&gt;50%): ${reliablyMade}</div>`,
+  };
+}
+
+function showCard(hdr, sub, bodyHtml) {
+  const card = document.getElementById('summary-card');
+  document.getElementById('sc-hdr').textContent = hdr;
+  document.getElementById('sc-sub').innerHTML = sub;
+  document.getElementById('sc-body').innerHTML = bodyHtml;
+  card.classList.remove('hide');
+}
+function hideCard() { document.getElementById('summary-card').classList.add('hide'); }
+
+// Free-pass override list HTML (each overridden node + its marginal unlock count).
+function freePassHtml(picks) {
+  if (!picks || !picks.length) return '';
+  const grp = '<div style="font-weight:600;color:#94a3b8;text-transform:uppercase;' +
+    'letter-spacing:.04em;font-size:11px;margin:9px 0 2px">Expert overrides: ' + picks.length + '</div>';
+  const rows = picks.map(p => {
+    const n = BY_ID[p.id] || {};
+    return `<div><span style="color:#eab308">★</span> <b>${p.id}</b> ` +
+      `<span class="k">ddG ${n.ddG != null ? (n.ddG > 0 ? '+' : '') + n.ddG : '—'} · ` +
+      `unlocked ${p.unlock}</span></div>`;
+  }).join('');
+  return grp + rows;
+}
+
+function onTimeChange() {
+  window._XRANGE = null;
+  document.getElementById('plot')._lastMetric = null;
+  render();
+}
+
+// Switch between the timeline graph and the strategy-efficiency chart.
+function onViewChange() {
+  const eff = document.getElementById('f-view').value === 'efficiency';
+  document.getElementById('main-timeline').classList.toggle('hide', eff);
+  document.getElementById('main-efficiency').classList.toggle('hide', !eff);
+  document.querySelectorAll('.tl-ctl').forEach(e => e.classList.toggle('hide', eff));
+  document.querySelectorAll('.eff-ctl').forEach(e => e.classList.toggle('hide', !eff));
+  render();
+}
+
+// ── Guided story: PREV/NEXT through saved control-states + captions ──────────
+const STORY = [
+  { view: 'timeline',   cutoff: '',  passes: 0, thresh: '9',
+    cap: "Every RBFE-scored compound over time. Y = the model's ΔΔG score (favorable up); color shows the same ΔΔG bins." },
+  { view: 'timeline',   cutoff: '0', passes: 0, thresh: '9',
+    cap: "Make only what RBFE scores favorable (ΔΔG ≤ 0). It caps out — the best compounds sit behind crossings the model rejects." },
+  { view: 'timeline',   cutoff: '0', passes: 3, thresh: '9',
+    cap: "Override the model on the few crucial crossings it would skip — and the top compounds come back, at a fraction of the cost." },
+  { view: 'efficiency', cutoff: '',  passes: 3, thresh: '9',
+    cap: "Best-in-class (pIC50 ≥ 9): RBFE alone barely beats random. This is where 3 expert overrides matter most — they recover the entire best-in-class set for less than half the synthesis, lifting the curve decisively above random." },
+  { view: 'efficiency', cutoff: '',  passes: 2, thresh: '8',
+    cap: "Potent bulk (pIC50 ≥ 8): RBFE plus two overrides recovers most of the potent set far more cheaply than random — but the last stretch costs nearly as much as the first 90%, so you can't realistically reach the whole set; sacrifices are unavoidable." },
+];
+let storyStep = 0;
+
+function applyStoryStep(i) {
+  storyStep = Math.max(0, Math.min(STORY.length - 1, i));
+  const s = STORY[storyStep];
+  document.getElementById('f-view').value = s.view;
+  document.getElementById('f-cutoff').value = s.cutoff;
+  document.getElementById('f-passes').value = String(s.passes);
+  document.getElementById('f-thresh').value = s.thresh;
+  // re-fit axes for the new state, then apply view (toggles controls + renders).
+  window._XRANGE = null;
+  document.getElementById('plot')._lastMetric = null;
+  onViewChange();
+  // caption + nav state
+  document.getElementById('story-cap').innerHTML = s.cap;
+  document.getElementById('story-step').textContent = (storyStep + 1) + ' / ' + STORY.length;
+  document.getElementById('story-prev').disabled = storyStep === 0;
+  document.getElementById('story-next').disabled = storyStep === STORY.length - 1;
+}
+function storyNav(d) { applyStoryStep(storyStep + d); }
+
+// ── Strategy-efficiency analysis (reuses reference-aware made-logic + freq) ───
+// x = total compounds made (over the RBFE-scored pool); y = # made with pIC50 ≥
+// threshold (policy-reachable: scored, non-given). Givens excluded from both axes
+// (they're not policy products). The render layer divides y by the threshold-set
+// size to show % of that set. Mirrors the standalone analysis.
+const SCORED_NODES = () => NODES.filter(n => n.ddG != null);
+function effSums(freq, thr) {
+  const scored = SCORED_NODES();
+  const totalMade = scored.reduce((s, n) => s + (freq.get(n.id) || 0), 0);
+  const hits = scored.reduce((s, n) =>
+    s + ((n.pic50 != null && n.pic50 >= thr) ? (freq.get(n.id) || 0) : 0), 0);
+  return { x: totalMade, y: hits };
+}
+// RBFE policy locus: sweep the ddG cutoff T from very-negative to +6 and, at each
+// T, compute the made-set under (that T, the CURRENT free-passes N, the CURRENT
+// explore budget). Plots (total scored made, #≥thr made) as the cutoff sweeps.
+// Raising free passes or explore lifts the locus up/left. `markT` = current cutoff
+// → its point is returned separately for the marker.
+let _LOCUS_CACHE = new Map(), _LOCUS_FOR = null;   // memo: story arrows revisit identical states
+function rbfePolicyLocus(thr, nPasses, budgetPct, markT) {
+  if (_LOCUS_FOR !== NODES) { _LOCUS_CACHE = new Map(); _LOCUS_FOR = NODES; }
+  const timeMode = document.getElementById('f-time').value;   // affects policyFrequencies week order
+  const ckey = `${thr}|${nPasses}|${budgetPct}|${markT}|${timeMode}`;
+  const cached = _LOCUS_CACHE.get(ckey);
+  if (cached) return cached;
+  const ddgs = [...new Set(SCORED_NODES().map(n => n.ddG))].sort((a, b) => a - b);
+  // sweep points: -inf (nothing favorable) + each distinct ddG threshold
+  const Ts = [-Infinity, ...ddgs];
+  const at = T => {
+    const forced = nPasses > 0 ? new Set(greedyFreePasses(T, nPasses).map(p => p.id)) : EMPTY_SET;
+    const f = policyFrequencies(T, budgetPct, 200, forced);
+    return effSums(f, thr);
+  };
+  const pts = Ts.map(T => { const { x, y } = at(T); return [x, y]; });
+  pts.sort((a, b) => a[0] - b[0]);
+  // marker at the user's current cutoff (or -inf when no cutoff set)
+  const mk = at(markT == null ? -Infinity : markT);
+  const result = { pts, marker: [mk.x, mk.y] };
+  _LOCUS_CACHE.set(ckey, result);
+  return result;
+}
+
+function renderEfficiency() {
+  const thr = parseInt(document.getElementById('f-thresh').value);
+  const nScored = SCORED_NODES().length;
+  const nHits = SCORED_NODES().filter(n => n.pic50 != null && n.pic50 >= thr).length;
+
+  // Current policy controls (drive the RBFE line shape + marker position).
+  const cutoffRaw = document.getElementById('f-cutoff').value.trim();
+  const cutoffT = cutoffRaw === '' ? null : parseFloat(cutoffRaw);
+  const nPasses = parseInt(document.getElementById('f-passes').value) || 0;
+  const budgetPct = parseInt(document.getElementById('f-budget').value) || 0;
+
+  // Y is the % of the ≥threshold set made = 100 × count / nHits. nHits (the set
+  // size) is the denominator — computed, NEVER displayed. The locus compute is
+  // unchanged; we only divide its absolute counts here at the render layer.
+  const yPct = c => nHits ? (100 * c / nHits) : 0;
+
+  // 1. Random reference-free base-rate line (0% at 0 made → 100% at full pool).
+  const dumb = [[0, 0], [nScored, 100]];
+  // 2. RBFE = current policy across all cutoffs (+ current passes/explore).
+  const rbfe = rbfePolicyLocus(thr, nPasses, budgetPct, cutoffT);
+
+  const traces = [
+    { type: 'scatter', mode: 'lines', name: 'Random',
+      x: dumb.map(p => p[0]), y: dumb.map(p => p[1]),
+      line: { color: '#94a3b8', width: 2, dash: 'dash' },
+      hovertemplate: '%{x:.0f} made · %{y:.0f}% of the set<extra>Random</extra>' },
+    { type: 'scatter', mode: 'lines+markers', name: 'RBFE (your policy)',
+      x: rbfe.pts.map(p => p[0]), y: rbfe.pts.map(p => yPct(p[1])),
+      line: { color: '#2563eb', width: 3, shape: 'linear' },
+      marker: { size: 5, color: '#2563eb' },
+      hovertemplate: '%{x:.0f} made · %{y:.0f}% of the set<extra>RBFE policy</extra>' },
+    { type: 'scatter', mode: 'markers', name: 'current cutoff T',
+      x: [rbfe.marker[0]], y: [yPct(rbfe.marker[1])],
+      marker: { size: 16, color: '#eab308', symbol: 'star', line: { width: 1.5, color: '#b45309' } },
+      hovertemplate: '%{x:.0f} made · %{y:.0f}% of the set<extra>current cutoff</extra>' },
+  ];
+
+  Plotly.newPlot('effplot', traces, {
+    template: 'plotly_white',
+    margin: { t: 16, b: 56, l: 64, r: 16 },
+    font: { size: 14, family: 'Inter, system-ui, sans-serif' },
+    xaxis: { title: { text: 'Total compounds made (synthesis effort)', font: { size: 15 } },
+             range: [0, nScored * 1.02], tickfont: { size: 13 } },
+    yaxis: { title: { text: `% of the pIC50 ≥ ${thr} set made`, font: { size: 15 } },
+             range: [0, 105], ticksuffix: '%', tickfont: { size: 13 } },
+    legend: { font: { size: 13 }, x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.85)' },
+    hovermode: 'closest',
+  }, { displayModeBar: true, responsive: true });
+
+  document.getElementById('eff-caption').innerHTML =
+    `<b>Random</b> = make compounds at random. <b>RBFE</b> = your current policy across all cutoffs; ` +
+    `the marker is your current cutoff — raise expert overrides to lift the line.`;
+  const passTxt = nPasses > 0 ? ` · ${nPasses} expert override${nPasses === 1 ? '' : 's'}` : '';
+  const budTxt = budgetPct > 0 ? ` · explore ${budgetPct}%` : '';
+  document.getElementById('eff-readout').textContent =
+    `current cutoff: ${cutoffT == null ? '(none)' : 'ddG ≤ ' + cutoffT}${passTxt}${budTxt} ` +
+    `→ ${rbfe.marker[0].toFixed(0)} made · ${yPct(rbfe.marker[1]).toFixed(0)}% of the ≥${thr} set.`;
+}
+
+function render() {
+  if (!NODES.length) return;
+  if (document.getElementById('f-view').value === 'efficiency') { renderEfficiency(); return; }
+  const metricKey = document.getElementById('f-metric').value;
+  const metric = METRICS[metricKey];
+  const edgeMode = document.getElementById('f-edges').value;
+  const edgeField = edgeMode === 'rbfe' ? 'ref' : 'parent';
+  const highlightId = document.getElementById('f-highlight').value.trim();
+
+  // ── ADDITIVE policy: ddG cutoff (base) + optional explore budget add-on ──
+  const cutoffRaw = document.getElementById('f-cutoff').value.trim();
+  const cutoffT = cutoffRaw === '' ? null : parseFloat(cutoffRaw);
+  const cutoffActive = cutoffT != null && !Number.isNaN(cutoffT);
+  const budgetPct = parseInt(document.getElementById('f-budget').value) || 0;
+  const nPasses = parseInt(document.getElementById('f-passes').value) || 0;
+  const N_DRAWS = 200;
+  // POLICY ENGAGES ONLY WITH A FINITE CUTOFF. An empty cutoff means "no filter,
+  // make everything" (T = +∞) — the FULL library is recovered regardless of free
+  // passes or explore budget (they're no-ops since nothing is rejected). Free
+  // passes / explore only select/reduce when a finite cutoff rejects some nodes.
+  const effT = cutoffActive ? cutoffT : -Infinity;
+  const passPicks = (cutoffActive && nPasses > 0) ? greedyFreePasses(effT, nPasses) : [];
+  const forced = new Set(passPicks.map(p => p.id));
+  const isFreePass = id => forced.has(id);
+  const policyActive = cutoffActive;   // empty cutoff → no policy → full library
+  const explore = cutoffActive && budgetPct > 0;
+  // Continuous made-frequency over N seeded draws (budget 0 → deterministic 0/1;
+  // no policy → everyone freq 1 = full library). Drives opacity.
+  let freqMap = null;
+  if (policyActive) freqMap = policyFrequencies(effT, budgetPct, N_DRAWS, forced);
+  const freqOf = n => policyActive ? (freqMap.get(n.id) || 0) : 1;
+  // "reliably made" = freq > 0.5 (kept only as a secondary stat).
+  const isMade = n => freqOf(n) > 0.5;
+
+  // OBVIOUS and SEED compounds with null ddG = "reference baseline": in the ΔΔG
+  // view, render them at y=0 (the anchor line) instead of dropping them, so the
+  // RBFE root anchors that scored compounds reference stay visible/connected.
+  const isBaseline = n => metric.key === 'ddG' && n.ddG == null && (isObvious(n.id) || isSeed(n.id));
+  const hasMetric = n => metricValue(n, metric) != null || isBaseline(n);
+  // ΔΔG view: clamp the PLOTTED y to [-5, +5] (display only; true ddG kept
+  // everywhere else — tooltip, summary, policy/efficiency logic). Edges reuse
+  // metricY so they connect to clamped node positions. Baseline (seeds/OBVIOUS
+  // at 0) unaffected.
+  const metricY = n => {
+    if (isBaseline(n)) return 0;
+    const v = metricValue(n, metric);
+    if (v == null) return v;
+    return metric.key === 'ddG' ? Math.max(-5, Math.min(5, v)) : v;
+  };
+
+  // Highlight lineage set.
+  let hlSet = new Set();
+  if (highlightId && BY_ID[highlightId]) {
+    hlSet = new Set([...getAncestors(highlightId), ...getDescendants(highlightId), highlightId]);
+  }
+
+  // ── Summary sidebar card ──
+  if (hlSet.size > 0) {
+    const members = [...hlSet].map(id => BY_ID[id]).filter(Boolean);
+    const modeLabel = edgeField === 'ref' ? 'RBFE refs' : 'inferred lineage';
+    showCard(highlightId, `lineage: ${hlSet.size} compounds · via ${modeLabel}`,
+             summarizeAffinity(members).html);
+  } else if (explore) {
+    // Explore mode → expected-yield summary (sums of per-compound made-probability).
+    const tTxt = cutoffActive ? `ddG ≤ ${cutoffT}` : 'no cutoff';
+    const pTxt = nPasses > 0 ? ` + ${passPicks.length} expert override${passPicks.length === 1 ? '' : 's'}` : '';
+    showCard(`Policy · ${tTxt} + explore ${budgetPct}%/week${pTxt}`,
+      `${N_DRAWS} seeded draws · expected yield`,
+      summarizeExpectedYield(freqOf).html + freePassHtml(passPicks));
+  } else if (policyActive) {
+    // Deterministic cutoff (+ optional free passes) → integer made-set summary.
+    const madeNodes = NODES.filter(isMade);
+    const s = summarizeAffinity(madeNodes, NODES.length);
+    const tTxt = cutoffActive ? `ddG ≤ ${cutoffT}` : 'overrides only';
+    const pTxt = nPasses > 0 ? ` + ${passPicks.length} expert override${passPicks.length === 1 ? '' : 's'}` : '';
+    showCard(`Policy · ${tTxt}${pTxt}`,
+      `${madeNodes.length} made (deterministic) · best non-given: ` +
+      (s.bestPic ? `<b>${s.bestPic.id}</b> (pIC50 ${s.bestPic.v.toFixed(2)})` : '—'),
+      s.html + freePassHtml(passPicks));
+  } else {
+    // No policy → everything made; success universe = all RBFE-scored non-given.
+    const s = summarizeAffinity(NODES.slice(), NODES.length);
+    const nSc = NODES.filter(n => n.ddG != null).length;
+    showCard('All RBFE-scored (no policy)',
+      `${nSc} RBFE-scored compounds · best non-given: ` +
+      (s.bestPic ? `<b>${s.bestPic.id}</b> (pIC50 ${s.bestPic.v.toFixed(2)})` : '—'),
+      s.html);
+  }
+
+  // Visible nodes.
+  let filtered = NODES.filter(n => {
+    if (!hasMetric(n)) return false;
+    if (nodeDate(n) == null) return false;
+    if (hlSet.size > 0) return hlSet.has(n.id);
+    return true;
+  });
+  const fids = new Set(filtered.map(n => n.id));
+  const traces = [];
+
+  const nWithMetric = NODES.filter(hasMetric).length;
+  document.getElementById('shown').textContent =
+    `${filtered.length} shown · ${NODES.length - nWithMetric} without ${metric.label}`;
+
+  // Edges (grey). When a policy is active, each edge's opacity follows its
+  // endpoints' made-probability via the PRODUCT of their freqs: product 0 →
+  // hidden; else the same sqrt mapping as nodes (0.25 + 0.75*sqrt). Bucketed
+  // into a few opacity traces to avoid one-trace-per-edge overhead.
+  if (edgeMode !== 'none') {
+    const buckets = new Map();   // opacityLevel -> {x:[], y:[]}
+    filtered.forEach(n => {
+      const tgt = n[edgeField];
+      if (!tgt || !BY_ID[tgt] || !fids.has(tgt)) return;
+      const p = BY_ID[tgt];
+      const nv = metricY(n), pv = metricY(p);
+      if (nv == null || pv == null) return;
+      const nd = nodeDate(n), pd = nodeDate(p);
+      if (nd == null || pd == null) return;
+      if (hlSet.size > 0 && !hlSet.has(n.id)) return;
+      let op = 1;
+      if (policyActive) {
+        const fn = freqOf(n), fp = freqOf(p);
+        // Hide if either endpoint is hidden (below its node threshold) — explore
+        // uses MIN_VISIBLE_FREQ, deterministic uses exact-0. Also hide if the
+        // edge's freq-product falls below the threshold.
+        const eThresh = explore ? MIN_VISIBLE_FREQ : 0;
+        const endpointHidden = e => !isGiven(e.id) && (explore ? freqOf(e) < eThresh : freqOf(e) <= 0);
+        if (endpointHidden(n) || endpointHidden(p)) return;
+        const prod = fn * fp;
+        if (explore ? prod < eThresh : prod <= 0) return;
+        op = freqOpacity(prod);
+      }
+      const key = Math.round(op * 8) / 8;            // quantize to 1/8 steps
+      if (!buckets.has(key)) buckets.set(key, { x: [], y: [] });
+      const b = buckets.get(key);
+      b.x.push(pd, nd, null); b.y.push(pv, nv, null);
+    });
+    const baseColor = hlSet.size > 0 ? '37,99,235' : '148,163,184';
+    const baseAlpha = hlSet.size > 0 ? 0.5 : 0.25;
+    buckets.forEach((b, level) => {
+      traces.push({ type: 'scatter', mode: 'lines', x: b.x, y: b.y,
+        line: { color: `rgba(${baseColor},${(baseAlpha * level).toFixed(3)})`, width: 1 },
+        hoverinfo: 'skip', showlegend: false });
+    });
+  }
+
+  // Highlighted edges (thick blue).
+  if (hlSet.size > 0) {
+    const hef = activeEdgeField();
+    const hx = [], hy = [];
+    filtered.forEach(n => {
+      const tgt = n[hef];
+      if (!hlSet.has(n.id) || !tgt || !BY_ID[tgt]) return;
+      const p = BY_ID[tgt];
+      const nv = metricY(n), pv = metricY(p);
+      if (nv == null || pv == null) return;
+      const nd = nodeDate(n), pd = nodeDate(p);
+      if (nd == null || pd == null) return;
+      hx.push(pd, nd, null); hy.push(pv, nv, null);
+    });
+    traces.push({ type: 'scatter', mode: 'lines', x: hx, y: hy,
+      line: { color: '#2563eb', width: 3 }, hoverinfo: 'skip', showlegend: false });
+  }
+
+  // Nodes. When a policy is active, NON-GIVEN nodes are shown only if their made-
+  // frequency > 0; opacity = 0.25 + 0.75*sqrt(freq) (low-but-nonzero clearly
+  // visible, gradient to 1.0 solid). Never-made non-givens are hidden entirely.
+  // Givens (OBVIOUS/SEED, incl. baseline anchors) always stay visible.
+  const x = [], y = [], colors = [], sizes = [], ids = [], outlines = [], outlineColors = [], symbols = [], opac = [];
+  filtered.forEach(n => {
+    const obvious = isObvious(n.id);
+    const seed = isSeed(n.id);
+    const given = obvious || seed;
+    const f = freqOf(n);                          // 1 when no policy
+    // Hide non-given compounds that are never (or barely) made when a policy is
+    // active. Explore mode hides freq < MIN_VISIBLE_FREQ (declutters the rare
+    // tail); deterministic cutoff (freq 0/1) hides exactly-not-made.
+    const hideThresh = explore ? MIN_VISIBLE_FREQ : 0;
+    if (policyActive && !given && f < hideThresh) return;
+    if (policyActive && !given && !explore && f <= 0) return;
+
+    const sc = n.n_desc || 0;
+    const sz = Math.max(6, Math.min(28, 6 + Math.sqrt(sc) * 2.5));
+    const isHL = !obvious && hlSet.size > 0 && hlSet.has(n.id);
+    x.push(nodeDate(n));
+    y.push(metricY(n));
+    if (obvious) {
+      colors.push(OBVIOUS_GREY); sizes.push(Math.max(6, sz * 0.6));
+      outlines.push(0.5); outlineColors.push('#94a3b8'); symbols.push('circle');
+      opac.push(policyActive ? 0.55 : 0.45);
+    } else if (isFreePass(n.id)) {
+      // Free-pass override: gold star, thick gold ring — the waved-through node.
+      const baseline = isBaseline(n);
+      colors.push(baseline ? OBVIOUS_GREY : metricColor(metricValue(n, metric), metric));
+      sizes.push(Math.max(13, sz * 1.4));
+      outlines.push(3.5); outlineColors.push('#eab308');
+      symbols.push('star');
+      opac.push(1);
+    } else {
+      const baseline = isBaseline(n);   // SEED/OBVIOUS plotted at ddG=0 (no real value)
+      colors.push(baseline ? OBVIOUS_GREY : metricColor(metricValue(n, metric), metric));
+      sizes.push(isHL ? sz * 1.5 : sz);
+      outlines.push(isHL ? 3 : (seed ? 2.5 : (n.is_root ? 2 : 0.5)));
+      outlineColors.push(seed ? '#7c3aed' : (n.is_root ? '#16a34a' : (isHL ? '#0f172a' : '#475569')));
+      symbols.push((seed || n.is_root) ? 'diamond' : 'circle');
+      // Givens always solid-ish; non-given under policy → sqrt-of-freq gradient.
+      opac.push(baseline ? 0.7 : (policyActive && !given ? freqOpacity(f) : 1));
+    }
+    ids.push(n.id);
+  });
+  traces.push({ type: 'scatter', mode: 'markers', x, y,
+    marker: { size: sizes, color: colors, opacity: opac,
+              line: { width: outlines, color: outlineColors }, symbol: symbols },
+    hoverinfo: 'none', customdata: ids, showlegend: false });
+
+  // Locked global x-range — pad ~4% of the date span (min 10 days) on each side
+  // so the earliest/latest compounds open comfortably inside, not on the border.
+  if (!window._XRANGE) {
+    const dates = NODES.map(nodeDate).filter(Boolean).sort();
+    if (dates.length) {
+      const first = new Date(dates[0]), last = new Date(dates[dates.length - 1]);
+      const span = last.getTime() - first.getTime();
+      const pad = Math.max(10 * 24 * 60 * 60 * 1000, span * 0.04);
+      window._XRANGE = [
+        new Date(first.getTime() - pad).toISOString().slice(0, 10),
+        new Date(last.getTime() + pad).toISOString().slice(0, 10),
+      ];
+    }
+  }
+
+  const plotEl = document.getElementById('plot');
+  let savedXRange = null, savedYRange = null;
+  if (plotEl._lastMetric === metricKey && plotEl.layout) {
+    const lx = plotEl.layout.xaxis, ly = plotEl.layout.yaxis;
+    if (lx && lx.range) savedXRange = lx.range.slice();
+    if (ly && ly.range) savedYRange = ly.range.slice();
+  }
+  plotEl._lastMetric = metricKey;
+  plotEl._clickWired = false;
+
+  const shapes = [];
+  if (metric.zeroLine) {
+    shapes.push({ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: 0, y1: 0,
+                  line: { color: '#94a3b8', width: 1, dash: 'dash' } });
+  }
+  if (cutoffActive && metric.key === 'ddG') {
+    shapes.push({ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: cutoffT, y1: cutoffT,
+                  line: { color: '#dc2626', width: 1.5, dash: 'dash' } });
+  }
+
+  Plotly.newPlot('plot', traces, {
+    template: 'plotly_white',
+    margin: { t: 14, b: 60, l: 70, r: 16 },
+    font: { size: 14, family: 'Inter, system-ui, sans-serif' },
+    xaxis: { title: { text: document.getElementById('f-time').value === 'rbfe' ? 'RBFE Run Date' : 'Assay Date', font: { size: 15 } },
+             type: 'date', range: savedXRange || window._XRANGE, autorange: false, tickfont: { size: 13 } },
+    yaxis: { title: { text: metric.label, font: { size: 15 } }, range: savedYRange || metric.yrange,
+             type: 'linear', autorange: false, tickfont: { size: 13 } },
+    hovermode: 'closest', shapes,
+  }, { displayModeBar: true, responsive: true });
+  renderLegend(metric);
+
+  // PUBLIC: no click-to-highlight lineage. Double-click resets zoom only.
+  if (!plotEl._clickWired) {
+    plotEl._clickWired = true;
+    plotEl.on('plotly_doubleclick', function() {
+      Plotly.relayout('plot', { 'xaxis.range': window._XRANGE,
+        'yaxis.range': METRICS[document.getElementById('f-metric').value].yrange });
+      return false;
+    });
+  }
+
+  plotEl.on('plotly_hover', function(data) {
+    const pt = data.points[0];
+    if (!pt || !pt.customdata) return;
+    const n = BY_ID[pt.customdata];
+    if (!n) return;
+    const tt = document.getElementById('tt');
+    document.getElementById('tt-id').textContent = n.id;
+    const svgB64 = SVGS[n.id];
+    if (svgB64) {
+      let svg = atob(svgB64).replace(/width=['"][^'"]*['"]/, "width='100%'")
+                            .replace(/height=['"][^'"]*['"]/, "height='100%'");
+      document.getElementById('tt-svg').innerHTML = `<div style="width:230px;height:146px">${svg}</div>`;
+    } else { document.getElementById('tt-svg').innerHTML = ''; }
+    const lines = [];
+    if (isObvious(n.id)) lines.push(`<span style="color:#64748b"><b>Obvious</b> — tested regardless (other-series SAR)</span>`);
+    if (isSeed(n.id)) lines.push(`<span style="color:#64748b"><b>Campaign seed</b> — made to start (RBFE root anchor)</span>`);
+    if (isFreePass(n.id)) lines.push(`<span style="color:#a16207"><b>★ Expert override</b> — this crucial RBFE-rejected compound was made anyway</span>`);
+    if (isBaseline(n)) lines.push(`<span style="color:#64748b">(reference baseline, no ΔΔG)</span>`);
+    if (n.pic50 != null) lines.push(`pIC50: <b>${n.pic50}</b>`);
+    if (n.ddG != null) lines.push(`ΔΔG: <b>${n.ddG > 0 ? '+' : ''}${n.ddG}</b> kcal/mol` +
+      (Math.abs(n.ddG) > 5 ? ` <span style="color:#94a3b8">(off-scale ${n.ddG > 0 ? '▲' : '▼'})</span>` : ''));
+    else lines.push(`ΔΔG: <span style="color:#94a3b8">no RBFE</span>`);
+    lines.push(`date: ${n.date || '?'}`);
+    lines.push(`RBFE date: ${n.rbfe_date || '—'}`);
+    if (n.parent) lines.push(`Parent: ${n.parent} (${n.changed})`);
+    else lines.push(`<b>Root</b> (no parent)`);
+    lines.push(`Descendants: ${n.n_desc}${n.best_desc ? ' (best pIC50: ' + n.best_desc + ')' : ''}`);
+    document.getElementById('tt-info').innerHTML = lines.join('<br>');
+    let left = data.event.clientX + 16, top = data.event.clientY - 60;
+    if (left + 350 > window.innerWidth) left = data.event.clientX - 360;
+    if (top < 0) top = 10;
+    tt.style.left = left + 'px'; tt.style.top = top + 'px'; tt.style.display = 'block';
+  });
+  plotEl.on('plotly_unhover', function() { document.getElementById('tt').style.display = 'none'; });
+}
+
+// ── Load data (PUBLIC: committed opaque-id data + opaque-keyed structures) ───
+// data/brain.json holds opaque ids (C0001…) and numeric fields only — no real
+// ids, no structures. Structures (git-ignored, opaque-keyed) rehydrate the
+// drawings if present; the viewer degrades gracefully without them.
+fetch('data_private/structures.opaque.private.json', { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : {})
+  .then(s => { SVGS = s || {}; })
+  .catch(() => { SVGS = {}; });
+
+fetch('data/brain.json', { cache: 'no-store' })
+  .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
+  .then(data => {
+    NODES = data;
+    NODES.forEach(n => BY_ID[n.id] = n);
+    deriveSeeds();
+    applyStoryStep(0);   // open on story beat 1 (sets controls + caption + renders)
+  })
+  .catch(() => { document.getElementById('banner').classList.add('show'); });
+</script>
+</body></html>

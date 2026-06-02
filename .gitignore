@@ -1,0 +1,21 @@
+# ── HARD BLOCK on chemical matter — never commit, even to the private repo ──
+# Externalized structures (SVGs, SMILES, real compound IDs, chemistry labels)
+*.private.json
+*.private.js
+data_private/
+**/data_private/
+# Raw proprietary exports
+*.csv
+*.sdf
+*.pkl
+# ── Internal tooling + internal viewer — NOT public (real IDs, assay names,
+#    source paths). Stay on disk for local/internal use, never published. ──
+**/index.full.html
+**/extract_brain.py
+**/build.py
+**/seed_data/
+# OS / editor
+.DS_Store
+__pycache__/
+*.pyc
+*.bak
