@@ -4,7 +4,7 @@
 <title>SAR Brain — design timeline</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
-  body { font-family: Inter, system-ui, sans-serif; margin: 0; background: #f8f9fb; color: #1e293b; font-size: 14px; }
+  body { zoom: 0.9; font-family: Inter, system-ui, sans-serif; margin: 0; background: #f8f9fb; color: #1e293b; font-size: 14px; }
   .hdr { background: #0f172a; color: #f8fafc; padding: 14px 22px; font-size: 18px; font-weight: 700; }
   .hdr span { font-weight: 400; font-size: 13px; color: #94a3b8; margin-left: 14px; }
   .ctl { padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 16px 20px; align-items: flex-end;
@@ -1016,10 +1016,27 @@ function render() {
   }, { displayModeBar: true, responsive: true });
   renderLegend(metric);
 
-  // PUBLIC: no click-to-highlight lineage. Double-click resets zoom only.
+  // Click a node → highlight that compound's connections: its reference(s) up the
+  // chain and the compounds derived from it. Click it again / click empty space
+  // clears; double-click clears and resets the zoom.
+  const hlField = document.getElementById('f-highlight');
   if (!plotEl._clickWired) {
     plotEl._clickWired = true;
+    plotEl.on('plotly_click', function(data) {
+      const pt = data.points[0];
+      if (!pt || !pt.customdata) return;
+      plotEl._justClickedPoint = true;
+      hlField.value = (hlField.value === pt.customdata) ? '' : pt.customdata;
+      render();
+    });
+    plotEl.addEventListener('click', function() {
+      setTimeout(() => {
+        if (plotEl._justClickedPoint) { plotEl._justClickedPoint = false; return; }
+        if (hlField.value) { hlField.value = ''; render(); }
+      }, 0);
+    });
     plotEl.on('plotly_doubleclick', function() {
+      if (hlField.value) { hlField.value = ''; render(); }
       Plotly.relayout('plot', { 'xaxis.range': window._XRANGE,
         'yaxis.range': METRICS[document.getElementById('f-metric').value].yrange });
       return false;
