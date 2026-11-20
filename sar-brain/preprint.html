@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAR Brain: A Reinforcement Learning Environment for Medicinal Chemistry Decision-Making</title>
+<style>
+:root{color-scheme:light;--ink:#192e3b;--teal:#006c67;--muted:#536873;--rule:#cdd9d8;--sans:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:white;color:var(--ink);font:19px/1.6 Georgia,serif}main,nav,footer{width:min(100% - 48px,880px);margin:auto}nav,footer{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:18px 0;border-bottom:1px solid var(--rule);font:15px/1.4 var(--sans)}nav strong,footer strong{margin-right:auto}a{color:var(--teal);text-underline-offset:.17em}a:hover{text-decoration-thickness:2px}a:focus-visible,button:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
+header{margin:46px auto 22px}.meta,figcaption,.compare{font-family:var(--sans)}.meta{color:var(--muted);font-size:14px}.meta strong{color:var(--teal)}h1,h2{font-weight:500;line-height:1.08;letter-spacing:-.035em;margin:.26em 0 .5em}h1{font-size:clamp(40px,5.5vw,64px);max-width:820px}h2{margin-top:0;font-size:clamp(30px,4vw,43px);text-wrap:balance}.sub{font-size:clamp(20px,2.4vw,25px);color:var(--muted);line-height:1.3;margin:.45em 0 1em}
+p{margin:0 auto .9em}section{border-top:1px solid var(--rule);padding:32px 0 13px}main p{max-width:76ch;margin-left:0}header+p{font-size:1.12em}figure{margin:24px 0 30px}figure img{display:block;width:100%;height:auto}figcaption{font-size:14px;color:var(--muted);margin:.65em 0 0}figure.overview{border:1px solid var(--rule);border-radius:4px;overflow:hidden}.overview a{display:block}.overview figcaption{margin:0;border-top:1px solid var(--rule);padding:10px 14px}.scheme img{margin:auto}
+.compare{border-block:1px solid var(--rule);padding:16px 0;color:var(--ink)}.compare h3{margin:0 0 12px;font:600 18px var(--sans)}.switch{display:inline-flex;gap:2px;background:#eef3f3;border-radius:6px;padding:3px}.switch button{font:600 14px var(--sans);color:#536873;background:transparent;border:1px solid transparent;border-radius:4px;padding:6px 10px;cursor:pointer}.switch button[aria-pressed=true]{color:var(--teal);border-color:var(--rule);background:white}
+.bars{display:grid;grid-template-columns:minmax(8em,13em) 1fr;gap:10px 18px;align-items:center;margin:16px 0 2px;font-size:15px}.track{display:flex;align-items:center;gap:8px}.bar{height:12px;background:#7153ac;display:block;border-radius:2px}.bar.sar{background:#08796e}.value{min-width:3ch;font-variant-numeric:tabular-nums}.links{font:600 16px var(--sans);margin-bottom:12px}footer{border-top:1px solid var(--rule);border-bottom:0;margin-top:20px;padding-bottom:35px}footer a{font-size:14px}
+@media(max-width:600px){body{font-size:17px}main,nav,footer{width:calc(100% - 32px)}header{margin-top:32px}nav{gap:12px;font-size:14px}.bars{grid-template-columns:9em 1fr;gap:10px}.compare{font-size:15px}section{padding-top:25px}}
+@media print{nav,footer,.switch,.links{display:none}body{font-size:11pt}main{width:100%}header{margin-top:0}h1{font-size:32pt}h2{font-size:22pt}section{padding-top:14px}figure{break-inside:avoid}a{color:inherit}}
+.world-map{padding:18px 0;border-block:1px solid var(--rule)}.world-map h3{font:600 21px var(--sans);margin:0 0 11px}.world-map .switch{margin-bottom:12px}.world-map img{width:100%;display:block}.world-map iframe{display:block;border:0;width:100%;aspect-ratio:1172/530}.world-map figcaption{margin:8px 0 0}
+#renin-decision{font-family:var(--sans);padding:15px 0 0}#renin-decision h4{font:500 clamp(23px,3vw,31px)/1.15 Georgia,serif;margin:0 0 14px}.turns{display:flex;gap:0;flex-wrap:wrap;margin-bottom:22px}.turns button{background:white;color:var(--muted);border:0;border-bottom:2px solid #d1dcde;padding:7px 12px;font:600 14px var(--sans);cursor:pointer}.turns button[aria-pressed=true]{color:#006961;border-color:#087469;background:#f0f7f5}
+.chem-fork{display:grid;grid-template-columns:minmax(145px,1fr) 7% minmax(140px,1fr) minmax(140px,.85fr);grid-template-rows:1fr 1fr;align-items:center;row-gap:16px}
+.nodehead b,.analog>b{font-size:17px}.nodehead small,.price small{font-size:14px;color:var(--muted)}.nodehead{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;justify-content:center}
+.platform{grid-area:1/1/3/2;border:1px solid #9bbcaf;background:#f1f8f4;border-radius:8px;padding:12px 3px;text-align:center}.chem-fork img{width:100%;height:clamp(90px,12vw,136px);object-fit:contain;display:block}.stock-status{display:inline-flex;align-items:center;gap:6px;color:#17644f;font-size:14px;font-weight:650}.stock-status i{width:.65em;height:.65em;border-radius:50%;background:currentColor}
+.fork-lines{grid-area:1/2/3/3;align-self:stretch;position:relative;color:#77958b}.fork-lines:before{content:"";position:absolute;top:50%;width:38%;border-top:2px solid}.fork-lines i{position:absolute;left:38%;right:4px;height:25%;border-left:2px solid}.fork-lines i:first-child{top:25%;border-top:2px solid;border-top-left-radius:6px}.fork-lines i:last-child{top:50%;border-bottom:2px solid;border-bottom-left-radius:6px}.fork-lines i:after{content:"";position:absolute;right:-2px;border:4px solid transparent;border-left:6px solid currentColor;border-right:0}.fork-lines i:first-child:after{top:-5px}.fork-lines i:last-child:after{bottom:-5px}
+.analog{padding:6px;text-align:center}.first{grid-area:1/3}.second{grid-area:2/3}.readout{margin-left:12px;padding:9px 0 9px 12px;border-left:1px solid #d7e0e2}.readout strong{font-size:15px}.assay{grid-area:1/4}.price{grid-area:2/4}.assay svg{display:block;width:100%;max-width:240px}.plotkey{display:flex;gap:10px;font:13px var(--sans);color:var(--muted)}.plotkey span:first-child{color:#006961}
+.cost-change{display:flex;align-items:center;gap:6px;margin:11px 0 4px}.cost-change span:is(.old-square,.new-square){display:grid;width:45px;height:42px;place-items:center;border-radius:5px;font:700 26px var(--sans)}.old-square{background:#eeeae4;color:#765f44}.new-square{background:#e3f1e9;color:#196449}.to{color:var(--muted)}.step-ledger{display:flex;align-items:baseline;gap:14px;border-block:1px solid var(--rule);padding:10px 3px;margin-top:10px;font-size:14px}.step-ledger strong{color:#345c51;white-space:nowrap}
+#renin-decision[data-step="0"] .platform{background:#f7f8f9;border-style:dashed;border-color:#b8c3c7}#renin-decision[data-step="0"] .stock-status{color:#657680}#renin-decision[data-step="0"] :is(.measured177,.to,.new-square){visibility:hidden}
+@media(max-width:650px){.turns button{padding:7px;font-size:13px}.chem-fork{grid-template-columns:34% 7% 59%;grid-template-rows:auto auto auto auto;row-gap:2px}.platform{grid-area:1/1/5/2}.fork-lines{grid-area:1/2/5/3}.first{grid-area:1/3}.second{grid-area:3/3}.assay{grid-area:2/3}.price{grid-area:4/3}.readout{margin:0 6px 12px;border:0;padding:0 4px}.assay svg{max-height:66px}.chem-fork img{height:100px}.step-ledger{flex-wrap:wrap;gap:4px}.readout strong,.nodehead small{font-size:13px}.world-map .switch{display:flex;flex-wrap:wrap;gap:3px;width:fit-content}}
+.source-flow,.replay-guide{font:15px/1.45 var(--sans);margin:22px 0 26px}.sources{display:grid;grid-template-columns:1fr 1fr;gap:16px}.sources>div,.source-flow .match{border:1px solid var(--rule);border-radius:6px;padding:10px;text-align:center}.sources strong,.sources small{display:block}.source-flow strong{color:#006c67;font-size:24px}.sources small{color:var(--muted);margin-top:3px}.source-flow .merge{height:13px;width:50%;margin:auto;border:solid #8ca9a7;border-width:0 1px 1px}.source-flow .merge:after{display:block;content:"";height:12px;width:1px;background:#8ca9a7;position:relative;top:13px;margin:auto}.source-flow .match{max-width:420px;margin:12px auto 0;display:flex;align-items:center;justify-content:center;gap:12px}.source-flow .down{text-align:center;color:var(--teal);font-size:20px}.source-flow .final{margin-top:0;background:#eff8f5}.source-flow details,.guide-keys details{border-top:1px solid var(--rule);padding:9px 0}.source-flow details:first-of-type,.guide-keys{margin-top:12px}.source-flow summary,.guide-keys summary{cursor:pointer;color:var(--teal);font-weight:600}.source-flow details p,.guide-keys details p{margin:8px 0 3px}.replay-guide h3{font:600 21px var(--sans);margin:0 0 10px}.replay-shot{position:relative;border:1px solid var(--rule)}.replay-shot img{display:block;height:auto}.replay-shot button{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);display:grid;place-items:center;border:2px solid white;background:#006c67;color:white;border-radius:50%;width:26px;height:26px;box-shadow:0 1px 4px #0004;padding:0;font:700 13px var(--sans);cursor:pointer}.replay-shot button[aria-expanded=true]{background:#18313e}.guide-keys{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;align-items:start}@media(max-width:600px){.guide-keys{grid-template-columns:1fr}.replay-shot button{width:22px;height:22px;font-size:11px}.source-flow .match{font-size:14px}}
+nav .demo-button,nav .game-button{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:44px;padding:.55em 1em;border:1px solid transparent;border-radius:4px;font-weight:600;text-decoration:none}
+nav .demo-button{background:#22677a;color:white}nav .demo-button:hover{background:#195263}
+nav .game-button{background:#edf5f0;border-color:#a3beae;color:#245541}nav .game-button:hover{background:#deede4}
+@media(max-width:450px){nav strong{flex-basis:100%}nav{gap:8px}}
+</style></head><body><nav aria-label="Companion materials"><strong>SAR Brain</strong><a class="demo-button" href="strategy_movie.html"><span aria-hidden="true">▶</span> Play the demos</a><a class="game-button" href="medicinal_chemistry_world_map.html">Play the game</a></nav>
+<main><header><div class="meta"><strong>Research preprint</strong> · Local draft</div><h1>SAR Brain: A Reinforcement Learning Environment for Medicinal Chemistry Decision-Making</h1><p class="sub">Replaying real campaigns with measured assays, simulated predictions, and the synthesis routes that connect compounds</p></header>
+<p>A medicinal chemist deciding what to make next has at least three options. Run a calculation to learn more about a candidate. Prepare an intermediate that several candidates need. Or make one compound and send it for testing. Each choice changes the value of the others. How should an agent choose?</p>
+<p><strong>SAR Brain turns a real medicinal chemistry campaign into a reinforcement learning (RL) environment.</strong> We match compounds and their measured activities to synthesis routes from patents. The agent starts with a few assay results. It can use a structure–activity model, pay for a simulated free energy perturbation (FEP) prediction from an eligible measured compound, prepare a shared intermediate, or make and assay a candidate. The goal is to reach the most potent measured compound while spending as little as possible.</p>
+<p>What links modeling and synthesis is what the agent keeps. In the RENIN replay, simulated FEP predicted an IC₅₀ of 78 nM for compound 177. The recorded assay gave 513 nM, a weaker result. Yet its synthesis left intermediate I5 in stock. <strong>The remaining route to compound 121 fell from nine steps to two, saving seven synthesis steps.</strong> <em>Compound 121 became cheaper to make, and 177 became a measured reference for future predictions.</em></p>
+<p>The replay tracks both changes after every turn. A retained intermediate lowers the price of compounds that share its route. A new assay updates the structure–activity model and makes another set of compounds eligible for FEP. We compare policies from the same starting inventory and count both synthesis operations and predictions.</p>
+<figure class="world-map" aria-labelledby="world-title">
+<h3 id="world-title">Figure 1. The medicinal chemistry world</h3>
+<div class="switch" role="group" aria-label="World map view">
+<button type="button" aria-pressed="true" aria-controls="world-memory" data-world="world-memory">What carries over</button>
+<button type="button" aria-pressed="false" aria-controls="world-decision" data-world="world-decision">RENIN decision</button>
+<button type="button" aria-pressed="false" aria-controls="world-flow" data-world="world-flow">Environment schematic</button>
+<button type="button" aria-pressed="false" aria-controls="world-example" data-world="world-example">Try one ABL1 decision</button></div>
+<div id="world-memory"><style>
+.memory{font:15px/1.4 var(--sans);margin-top:9px}.memory h4{font:500 clamp(22px,3vw,31px)/1.15 Georgia,serif;margin:0 0 16px}.memory-line{display:grid;grid-template-columns:1fr 35px 1fr;align-items:center;padding:12px 0;border-top:1px solid #d7dfdf;gap:8px}.memory-line h5{grid-column:1/-1;margin:0;font-size:16px;color:#644296}.memory-line.fep h5{color:#006c67}.memory-node{display:grid;grid-template-columns:minmax(90px,53%) 1fr;align-items:center;gap:6px}.memory-node img{height:115px;object-fit:contain}.memory-node b,.memory-node small{display:block}.memory-node small{color:#506873}.memory-arrow{color:#7750ac;font-size:26px;text-align:center}.fep .memory-arrow{color:#007870}.memory-price{display:inline-block;background:#eee6f8;color:#65418f;border-radius:4px;padding:3px 8px;font-weight:700}.memory-link{font-weight:700;color:#006e67}.memory details{margin-top:6px;color:#536873}.memory summary{cursor:pointer}@media(max-width:550px){.memory-node{display:flex;flex-direction:column;align-items:flex-start}.memory-node img{height:75px}.memory-line{grid-template-columns:1fr 24px 1fr}}
+
+.memory-line h5{display:flex;align-items:center;justify-content:space-between;gap:8px}.memory-line h5 button,.carry-close{font:600 13px/1.2 var(--sans);white-space:nowrap;padding:6px 11px;color:inherit;background:white;border:1px solid #c3cfd0;border-radius:5px;cursor:pointer}.carry-dialog{box-sizing:border-box;width:min(760px,calc(100% - 24px));max-height:90vh;max-height:90dvh;overflow:auto;padding:clamp(14px,3vw,25px);background:#fff;color:#19313d;border:1px solid #b9cccc;border-radius:10px;box-shadow:0 12px 52px #17384033;font:15px/1.45 var(--sans)}.carry-dialog::backdrop{background:#162c4166}.carry-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.carry-dialog .carry-heading h4{font:500 clamp(22px,3vw,29px)/1.15 Georgia,serif;margin:0}.carry-dialog p{margin:10px 0}.carry-dialog .branch-map{display:grid;grid-template-columns:1.12fr .75fr 1.12fr;align-items:center;margin:10px 0;text-align:center;row-gap:10px}.carry-source{grid-area:1/1/3/2;position:relative}.carry-source:after{content:"";position:absolute;right:-6px;top:50%;width:14%;border-top:2px solid #8355a8}#memory-fep .carry-source:after{border-color:#198078}.carry-source,.carry-target{min-width:0}.carry-dialog .branch-map img{width:100%;height:118px;object-fit:contain;display:block}.carry-source b,.carry-target b,.carry-edge b,.carry-edge small,.carry-source small,.carry-target small{display:block}.branch-map small{color:#4b626b;font-size:13px}.carry-edge{position:relative;align-self:stretch;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 6px;--line:#8355a8;font-size:14px}.carry-edge i{display:block;width:100%;border-top:2px solid var(--line);position:relative;margin:6px 0}.carry-edge i:after{content:"";position:absolute;right:0;top:-5px;border:4px solid transparent;border-left:7px solid var(--line);border-right:0}.carry-edge:before{content:"";position:absolute;left:5px;top:50%;bottom:-9px;border-left:2px solid var(--line);pointer-events:none}.carry-edge.lower:before{top:-9px;bottom:50%}.carry-edge.upper{grid-area:1/2}.carry-edge.lower{grid-area:2/2}.carry-target.upper{grid-area:1/3}.carry-target.lower{grid-area:2/3}.carry-score{color:#096b60}.carry-edge.pass{--line:#198078}.carry-edge.fail{--line:#8a9097}.carry-edge.fail b{color:#6b5252}.carry-edge.fail i{border-top-style:dashed}.carry-edge.fail i:after{border:0;content:"×";line-height:12px;top:-7px;right:0;font-weight:800;background:#fff;color:#775858}.carry-dialog footer{width:100%;border-top:1px solid #d6dfdf;margin:12px 0 0;padding:9px 0 0;font:14px/1.45 var(--sans);color:#42616b}.carry-dialog .branch-map .carry-source img{height:140px}
+@media(max-width:520px){.carry-dialog .branch-map{grid-template-columns:32% 32% 36%}.carry-dialog .branch-map img,.carry-dialog .branch-map .carry-source img{height:82px}.carry-edge{font-size:12px;padding-inline:4px}.carry-edge small,.branch-map small{font-size:11px}.carry-edge:before{left:3px}.carry-close{padding:6px}.carry-dialog .branch-map b{font-size:13px}}
+</style>
+<div class="memory"><h4>What the next experiment can reuse</h4>
+<div class="memory-line"><h5>Reusing an intermediate<button type="button" data-open="memory-synthesis" aria-haspopup="dialog" aria-controls="memory-synthesis" aria-label="More info about the common synthetic intermediate">More info</button></h5>
+<div class="memory-node"><img src="preprint-assets/decision-i5.svg" alt="I5 azaindole chloride"><div><b>I5 in stock</b><small>Made during synthesis of CPD 177</small></div></div>
+<div class="memory-arrow" aria-hidden="true">→</div>
+<div class="memory-node"><img src="preprint-assets/decision-121.svg" alt="CPD 121"><div><b>Make CPD 121</b><span class="memory-price">9 → 2 steps</span></div></div></div>
+<div class="memory-line fep"><h5>Using a tested compound as an FEP reference<button type="button" data-open="memory-fep" aria-haspopup="dialog" aria-controls="memory-fep" aria-label="More info about the FEP transformation graph">More info</button></h5>
+<div class="memory-node"><img src="preprint-assets/decision-239.svg" alt="CPD 239"><div><b>CPD 239 measured</b><small>9 nM reference</small></div></div>
+<div class="memory-arrow" aria-hidden="true">⇢</div>
+<div class="memory-node"><img src="preprint-assets/decision-270.svg" alt="CPD 270"><div><b>Predict CPD 270</b><span class="memory-link">LoMap 0.861 ✓</span><small>Cutoff 0.80</small></div></div></div>
+<figcaption>In the replay, I5 can be used in another synthesis. CPD 239 can be used in a calculation because its activity has been measured.</figcaption></div>
+
+<dialog class="carry-dialog" id="memory-synthesis" aria-labelledby="memory-synth-title">
+<div class="carry-heading"><h4 id="memory-synth-title">Two routes through I5</h4><form method="dialog"><button class="carry-close" autofocus>Close</button></form></div>
+<p>Both routes use the same intermediate, I5. Once the player has made enough I5 for both compounds, each route needs two more steps.</p>
+<div class="branch-map">
+<div class="carry-source"><small>7 shared steps from opening stock</small><img src="preprint-assets/decision-i5.svg" alt="Structure of the common azaindole chloride I5"><b>I5 · azaindole chloride</b></div>
+<div class="carry-edge upper"><b>+2 steps</b><i></i></div><div class="carry-target upper"><img src="preprint-assets/decision-177.svg" alt="CPD 177 with a fluorophenoxy substituent"><b>CPD 177</b><small>First product · 9 steps total</small></div>
+<div class="carry-edge lower"><b>+2 steps</b><i></i></div><div class="carry-target lower"><img src="preprint-assets/decision-121.svg" alt="CPD 121 with a methylbenzyl substituent"><b>CPD 121</b><small>Second product · 2 more steps</small></div></div>
+<footer>Making both products takes 11 steps (7 + 2 + 2).</footer></dialog>
+<dialog class="carry-dialog" id="memory-fep" aria-labelledby="memory-fep-title">
+<div class="carry-heading"><h4 id="memory-fep-title">FEP links at a LoMap cutoff of 0.80</h4><form method="dialog"><button class="carry-close" autofocus>Close</button></form></div>
+<p>Free energy perturbation (FEP) is a physics-based simulation method that estimates how a change in molecular structure affects binding to a target. Here we simulate only its error by adding noise to the candidate’s known experimental potency on the log scale.</p>
+<div class="branch-map">
+<div class="carry-source"><small>Measured reference · 9 nM</small><img src="preprint-assets/link-239.svg" alt="CPD 239, with a 2-methyl, 6-chloro phenoxy group"><b>CPD 239</b></div>
+<div class="carry-edge upper pass"><b class="carry-score">✓ Allowed</b><i></i><small>LoMap 0.861</small></div><div class="carry-target upper"><img src="preprint-assets/link-270.svg" alt="CPD 270 replaces 6-chloro with methyl and adds a fluorine"><b>CPD 270</b><small>6-Cl → Me · add 3-F</small></div>
+<div class="carry-edge lower fail"><b>Below cutoff</b><i></i><small>LoMap 0.779</small></div><div class="carry-target lower"><img src="preprint-assets/link-122.svg" alt="CPD 122 loses 6-chloro, adds fluorine and replaces the ether oxygen with a methylene linker"><b>CPD 122</b><small>6-Cl → H · add 3-F<br>O linker → CH₂</small></div></div>
+<footer>At this cutoff, the player can use CPD 239 to predict CPD 270. To predict CPD 122, the player needs a different measured reference.</footer></dialog>
+<script>
+for(const trigger of document.querySelectorAll('.memory [data-open]')){
+ const dialog=document.getElementById(trigger.dataset.open);
+ trigger.addEventListener('click',()=>dialog.showModal());
+ dialog.addEventListener('click',e=>{
+  if(e.target!==dialog)return;
+  const r=dialog.getBoundingClientRect();
+  if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();
+ });
+}
+</script>
+</div>
+<div id="world-decision" hidden><div id="renin-decision" data-step="1">
+ <h4>Synthesis costs before and after making CPD 177</h4>
+ <div class="turns" role="group" aria-label="RENIN replay position">
+  <button type="button" data-turn="0" aria-pressed="false">Before synthesis</button>
+  <button type="button" data-turn="1" aria-pressed="true">Make CPD 177</button>
+  <button type="button" data-turn="2" aria-pressed="false">Reuse I5 for CPD 121</button>
+ </div>
+ <div class="chem-fork">
+  <div class="platform">
+   <div class="nodehead"><b>I5</b><small>Azaindole chloride</small></div>
+   <img src="preprint-assets/decision-i5.svg" alt="I5 with a Boc-protected piperazine and a chlorine at the diversification site">
+   <div class="stock-status"><i></i><span data-stock>In stock</span></div>
+  </div>
+  <div class="fork-lines" aria-hidden="true"><i></i><i></i></div>
+  <div class="analog first"><b>CPD 177</b><img src="preprint-assets/decision-177.svg" alt="CPD 177 with its fluorophenoxy substituent"></div>
+  <div class="readout assay"><strong>Potency</strong>
+   <svg viewBox="0 0 220 86" role="img" aria-label="Potency on a logarithmic scale in nanomolar. FEP predicted 78. The assay measured 513 after synthesis.">
+    <path d="M12 46H208 M12 43v7 M110 43v7 M208 43v7" fill="none" stroke="#9aabb1"/>
+    <g fill="#52646d" font-size="11"><text x="12" y="65">10</text><text x="110" y="65" text-anchor="middle">100</text><text x="208" y="65" text-anchor="end">1,000 nM</text></g>
+    <circle cx="99.4" cy="46" r="6" stroke="#087469" stroke-width="3" fill="white"/><text x="99.4" y="28" text-anchor="middle" fill="#006961" font-weight="700" font-size="14">78</text>
+    <g class="measured177"><circle cx="179.6" cy="46" r="6" fill="#19313d"/><text x="179.6" y="28" text-anchor="middle" fill="#19313d" font-weight="700" font-size="14">513</text></g>
+   </svg>
+   <div class="plotkey"><span>○ FEP</span><span class="measured177">● Assay</span></div>
+  </div>
+  <div class="analog second"><b>CPD 121</b><img src="preprint-assets/decision-121.svg" alt="CPD 121 with its methylbenzyl substituent"></div>
+  <div class="readout price"><strong>Price from stock</strong>
+   <div class="cost-change"><span class="old-square">9</span><span class="to">→</span><span class="new-square">2</span></div>
+   <small data-price-note>steps to make CPD 121</small>
+  </div>
+ </div>
+ <div class="step-ledger" aria-live="polite"><strong data-ledger>9 synthesis steps paid</strong><span data-observation>CPD 177 measures 513 nM. Its route leaves I5 in stock.</span></div>
+</div>
+<figcaption>Select a step to see what is in stock and how much synthesis is left.</figcaption></div>
+<div id="world-flow" hidden><style>
+.env-map{--navy:#1d3442;--grey:#536b78;--purple:#7046a0;--green:#187258;--teal:#007c78;font:15px/1.35 system-ui,-apple-system,sans-serif;color:var(--navy);position:relative;max-width:980px;margin:0 auto;background:white}.env-map *{box-sizing:border-box}.env-map h4{margin:8px 0 16px;font:500 clamp(23px,3vw,31px)/1.15 Georgia,serif}.env-map button{appearance:none;cursor:help;font:inherit;color:inherit;background:none;border:0;border-radius:7px;padding:6px;text-align:center}.env-map button:hover,.env-map button:focus-visible,.env-map button[aria-expanded=true]{background:#f2f6f6;outline:2px solid #a4bdba;outline-offset:1px}.env-map b,.env-map small{display:block}.env-map small{font-size:13px;color:var(--grey)}.env-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.env-source svg{display:block;height:57px;width:100%;margin:0 auto 4px}.env-wire{display:block;width:100%;height:25px;color:#8a9ea6}.env-choose{display:block;margin:0 auto!important;padding:5px 18px!important;border:1px solid #b2c5c7!important;background:#f2f7f6!important;font-weight:700!important}.env-choose span{color:var(--teal)}.env-map .env-action{padding:10px 6px;border-top:3px solid var(--accent);border-radius:0 0 6px 6px;color:var(--accent)}.env-action>strong{display:block;font-size:17px}.env-action .env-mol{display:block;width:100%;height:115px;object-fit:contain;margin:auto}.env-action small{margin-top:3px}.env-out{display:flex;justify-content:center;align-items:center;gap:7px;font-weight:680;color:var(--navy);min-height:34px}.env-out em{font:700 20px/1.45 system-ui;padding:0 6px;background:#eeeaf2;color:var(--purple);border-radius:4px}.env-out .cost-before{background:#f2eee7;color:#795d3b}.env-out .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--green)}.env-mini{display:inline-block!important;width:31px!important;height:12px;vertical-align:middle}.env-ending{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;margin:0 auto;font-weight:630}.env-ending button{display:inline-flex;align-items:center;gap:6px}.env-ending svg{width:26px;height:26px}.env-ending button:last-child{color:var(--green)}.env-tip{position:fixed;z-index:150;max-width:min(290px,calc(100vw - 24px));padding:10px 13px;border:1px solid #b6c8c6;box-shadow:0 4px 18px #19313d22;background:white;color:#213c47;border-radius:6px;font:14px/1.4 system-ui;text-align:left;pointer-events:auto}.env-tip[hidden]{display:none}.env-caption{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid #d5dfe1;font:13px system-ui;color:var(--grey)}.env-caption a{color:#006b64}.env-map .env-pin{cursor:pointer}
+@media(max-width:570px){.env-three{gap:3px}.env-source svg{height:43px}.env-source b{font-size:13px}.env-map button{padding:4px 1px}.env-action>strong{font-size:13px;min-height:34px}.env-map .env-action{padding:7px 2px}.env-action .env-mol{height:67px}.env-out{font-size:13px;gap:3px}.env-out em{font-size:16px}.env-map small{font-size:11px}.env-ending{gap:7px;font-size:13px}.env-mini{width:19px!important}.env-map h4{margin-bottom:10px}}
+</style>
+<div class="env-map" aria-label="Medicinal chemistry decision loop">
+<h4>A turn in the RENIN campaign</h4>
+<div class="env-three">
+<button class="env-source" type="button" data-note="The patent lists structures, reagents and preparation steps. We connect routes where they use the same intermediate.">
+<svg aria-hidden="true" viewBox="0 0 130 60"><path fill="#f4f0f9" stroke="#806a9e" stroke-width="1.6" d="M38 3h45l11 11v42H38z M83 3v12h11"/><path fill="none" stroke="#74549a" stroke-width="2" d="m46 29 7-4 7 4v8l-7 4-7-4z M60 33h10l6-7h9m-15 7 6 8h9"/><path stroke="#ab9eb9" d="M47 47h23"/></svg><b>Patent routes</b></button>
+<button class="env-source" type="button" data-note="The archive supplies measured activities and, when available, experimental dates. You see the starting assays. Make and test another compound to see its result.">
+<svg aria-hidden="true" viewBox="0 0 130 60"><path d="M27 7v43h78" fill="none" stroke="#90a8a3" stroke-width="2"/><g fill="#378a6e"><circle cx="39" cy="38" r="4"/><circle cx="53" cy="34" r="4"/><circle cx="61" cy="41" r="4"/><circle cx="76" cy="22" r="4"/><circle cx="86" cy="27" r="4"/><circle cx="98" cy="12" r="4"/></g></svg><b>Measured assays</b></button>
+<button class="env-source" type="button" data-note="SAR uses fingerprint similarity to find compounds with related structures. FEP uses a separate set of links. A measured reference can be used when its link to the candidate meets the LoMap cutoff.">
+<svg aria-hidden="true" viewBox="0 0 130 60"><path d="m32 35 26-18 17 24 24-21M32 35l43 6M58 17l41 3" fill="none" stroke="#428f91" stroke-width="2" stroke-dasharray="4 3"/><g stroke="#137d79" stroke-width="2.4" fill="white"><circle cx="32" cy="35" r="5" fill="#16847c"/><circle cx="58" cy="17" r="5"/><circle cx="75" cy="41" r="5"/><circle cx="99" cy="20" r="5"/></g></svg><b>Model links</b></button>
+</div>
+<svg class="env-wire" aria-hidden="true" viewBox="0 0 600 25" preserveAspectRatio="none"><path d="M100 1v7q0 4 5 4h390q5 0 5-4V1 M300 1v21m-4-4 4 4 4-4" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke"/></svg>
+<button type="button" class="env-choose" data-note="You can see the structures, routes, stock, assay results, predictions and money spent so far. Activities for untested compounds and the errors in your predictions stay hidden."><span>● ○ ○</span> &nbsp; Choose a move</button>
+<svg class="env-wire" aria-hidden="true" viewBox="0 0 600 25" preserveAspectRatio="none"><path d="M300 1v21 M100 22v-8q0-4 5-4h390q5 0 5 4v8 M96 18l4 4 4-4m192 0 4 4 4-4m192 0 4 4 4-4" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke"/></svg>
+<div class="env-three">
+<button class="env-action" style="--accent:var(--purple)" type="button" data-note="Prepare I5 once and keep it in inventory. CPD 121 then needs only two further operations, down from nine. Making CPD 177 also stocks I5 along the way. The price counts each missing operation at one game dollar.">
+<strong>Stock an intermediate</strong><img class="env-mol" src="preprint-assets/decision-i5.svg" alt="Structure of intermediate I5"><b>I5 on the shelf</b><div class="env-out"><em class="cost-before">9</em> → <em>2</em></div><small>steps to CPD 121</small></button>
+<button class="env-action" style="--accent:var(--green)" type="button" data-note="Make CPD 239 and its assay reveals 9 nM. Its route products remain in stock, SAR can use its measured value, and CPD 239 becomes a reference for eligible FEP comparisons. The assay is included in the synthesis cost.">
+<strong>Make &amp; assay</strong><img class="env-mol" src="preprint-assets/decision-239.svg" alt="Structure of CPD 239"><b>CPD 239</b><div class="env-out"><i class="dot"></i> 9 nM</div><small>measured reference</small></button>
+<button class="env-action" style="--accent:var(--teal)" type="button" data-note="From measured CPD 239, the transformation to CPD 270 scores 0.861 and clears the 0.80 LoMap cutoff. A $1 query returns a simulated potency near 1 nM in this replay. The candidate becomes a reference only after its assay.">
+<strong>Query FEP</strong><img class="env-mol" src="preprint-assets/decision-270.svg" alt="Structure of CPD 270"><b>CPD 239 ⇢ 270</b><div class="env-out"><svg class="env-mini" viewBox="0 0 31 12" aria-hidden="true"><path d="M2 6h27M2 2v8m27-8v8" stroke="#117f78"/><circle cx="15" cy="6" r="3.5" stroke="#117f78" fill="white"/></svg> ≈ 1 nM</div><small>predicted potency</small></button>
+</div>
+<svg class="env-wire" aria-hidden="true" viewBox="0 0 600 25" preserveAspectRatio="none"><path d="M100 1v6q0 4 5 4h390q5 0 5-4V1 M300 1v21m-4-4 4 4 4-4" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke"/></svg>
+<div class="env-ending"><button type="button" data-note="The simulator updates the ranks, remaining steps and FEP links. You keep the materials and results from earlier turns."><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M5 14a8 8 0 1 0 3-7L5 9m0-6v6h6" fill="none" stroke="#465f70" stroke-width="2"/></svg>Choose again</button><span>or</span><button type="button" data-note="A successful run ends when you test the most potent compound in the set. For RENIN that is CPD 270 at 1 nM. Compare runs by synthesis steps, FEP queries or total cost."><svg viewBox="0 0 26 26" aria-hidden="true"><path d="m13 2 3.1 6.4 7.1 1-5.1 5 1.2 7-6.3-3.3-6.3 3.3 1.2-7-5.1-5 7.1-1z" fill="#27805f"/></svg>Best compound assayed</button></div>
+<div class="env-caption"><span>Hover or tap a drawing for the rules.</span><a href="preprint-assets/environment.html">Enlarge schematic</a></div>
+<div class="env-tip" role="tooltip" hidden></div>
+</div>
+<script>
+(()=>{
+ const map=document.currentScript.previousElementSibling, tip=map.querySelector('.env-tip'), buttons=[...map.querySelectorAll('button[data-note]')];
+ let shown=null,pinned=null,timer;
+ function close(){clearTimeout(timer);shown=null;pinned=null;tip.hidden=true;buttons.forEach(b=>b.setAttribute('aria-expanded','false'))}
+ function position(){if(!shown)return;const r=shown.getBoundingClientRect(),t=tip.getBoundingClientRect();
+  const left=Math.max(8,Math.min(innerWidth-t.width-8,r.left+(r.width-t.width)/2));
+  const top=r.bottom+6+t.height<innerHeight?r.bottom+6:Math.max(8,r.top-t.height-6);
+  Object.assign(tip.style,{left:left+'px',top:top+'px'});
+ }
+ function show(b){clearTimeout(timer);shown=b;tip.textContent=b.dataset.note;tip.hidden=false;buttons.forEach(n=>n.setAttribute('aria-expanded',String(n===b)));position()}
+ function deferClose(){clearTimeout(timer);timer=setTimeout(()=>{if(!pinned&&!tip.matches(':hover')&&!shown?.matches(':hover,:focus-visible'))close()},140)}
+ for(const b of buttons){
+  b.setAttribute('aria-expanded','false');b.setAttribute('aria-description',b.dataset.note);
+  b.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'&&!pinned)show(b)});
+  b.addEventListener('pointerleave',deferClose);
+  b.addEventListener('focus',()=>{pinned=null;show(b)});b.addEventListener('blur',()=>{if(!pinned)deferClose()});
+  b.addEventListener('click',()=>{if(pinned===b){close();return}pinned=b;show(b)});
+ }
+ tip.addEventListener('pointerenter',()=>clearTimeout(timer));tip.addEventListener('pointerleave',deferClose);
+ document.addEventListener('pointerdown',e=>{if(e.target!==tip&&!buttons.some(b=>b.contains(e.target)))close()});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+ window.addEventListener('resize',position);window.addEventListener('scroll',()=>{if(shown&&!shown.getClientRects().length)close();else position()},{passive:true});
+})();
+</script>
+</div>
+<div id="world-example" hidden><iframe title="Interactive ABL1 world map" loading="lazy" src="preprint-assets/abl-world.html"></iframe>
+<figcaption>Start with the measured activity of Example 190. Select an analog to compare the cost of making it with the cost of predicting its activity. The error bar shows one assumed standard deviation on either side of the prediction. <a href="preprint-assets/abl-world.html">Open full-size map</a></figcaption></div>
+</figure>
+<section><h2>Reconstructing a project from its records</h2>
+<p>A patent may give a full recipe for one compound and tell the reader to repeat it with a different starting material for the next. We trace each compound back through those instructions. This shows where two routes use the same intermediate and how many steps remain once that intermediate is on the shelf. To include a compound in the replay, we also need a numerical assay result. A label such as “A” may place two compounds in the strongest activity group without telling us which is more potent.</p>
+</section>
+<section><h2>Which patents can we replay?</h2>
+<p>For ABL1 and S1P1 we used two sources. BindingDB records the activity of compounds tested in patent assays. PaRoutes supplies synthesis routes extracted from patents. We first match the patent number across the two collections. Within each patent, we check that the final product of a route has the same chemical structure as a compound in an assay record. <a href="https://www.bindingdb.org/rwd/bind/chemsearch/marvin/Download.jsp">BindingDB patent data</a> · <a href="https://github.com/MolecularAI/PaRoutes">PaRoutes</a></p>
+<figure class="source-flow" aria-label="Matching patent routes to assays">
+ <div class="sources"><div><strong>66,821</strong>patents with synthesis routes<small>PaRoutes</small></div><div><strong>8,872</strong>patents with assay records<small>BindingDB</small></div></div>
+ <div class="merge" aria-hidden="true"></div>
+ <div class="match"><strong>1,092</strong><span>Patent number in both collections</span></div>
+ <div class="down" aria-hidden="true">↓</div>
+ <div class="match final"><strong>437</strong><span>At least one route product matched to a numerical assay result</span></div>
+ <figcaption>Counts refer to distinct patent numbers in the two source files. A patent can pass the final check with a single compound. A replay needs a series of compounds measured in a comparable assay.</figcaption>
+<details><summary>How often did we find a numerical result?</summary><p>Of the 8,872 patents in our BindingDB file, 8,554 (96.4%) had at least one positive activity entered as a single value. Of those, 4,362 also had a value qualified by &lt; or &gt;. The file already selects for assay data. To estimate how often patents publish only A/B/C categories, we would need to sample original patent tables independently of BindingDB.</p></details>
+</figure>
+
+<p>The ABL1 patent shows why assay identity matters. Example 175 gave an IC₅₀ of 0.5 nM in the radiometric assay and 0.2 nM in a second assay. We use the radiometric result for the replay. The same table reports some compounds only as “below 3 nM.” That tells us they passed a threshold but leaves their order uncertain. <a href="https://patents.google.com/patent/US9278981B2/en#:~:text=Table%20of%20biochemical%20data%20part%20I">ABL1 patent, biochemical data tables</a></p>
+<p>RENIN has a different starting point. RetroDMTA supplies measured compounds and experimental dates. We match those compounds to preparations in the renin patent. This lets the replay show both the order of the recorded experiments and the number of operations on each synthesis route. RENIN starts with 15 measured compounds and 26 candidates from one branch. The ABL1 and S1P1 replays cover 79 and 74 compounds, respectively. <a href="https://patents.google.com/patent/US8580813B2/en">Renin patent</a> · <a href="https://pubs.rsc.org/en/content/articlehtml/2026/dd/d5dd00387c">RetroDMTA study</a></p>
+<style>
+.explore{font:15px/1.45 var(--sans);padding:17px 0;border-block:1px solid var(--rule)}.explore h3{font:500 clamp(22px,3vw,29px)/1.2 Georgia,serif;margin:0 0 12px}.explore button,.compare input{cursor:pointer}.explore .switch{display:flex;flex-wrap:wrap;width:fit-content}.explore svg{display:block;width:100%}.depth-plot{margin-top:10px}.depth-plot .point{transition:transform .65s ease}.depth-plot .point text{fill:#253e48;font:600 13px system-ui;paint-order:stroke;stroke:white;stroke-width:4;stroke-linejoin:round}.focus-readout{min-height:1.5em;margin-top:8px;color:#31585b;font:600 15px/1.4 var(--sans)}.explore details{margin-top:12px;font:14px/1.45 var(--sans);color:var(--muted)}.explore summary{cursor:pointer}.explore details img{margin-top:12px}.lab-note{margin-top:6px}.evidence-image{position:relative;margin-top:12px;border:1px solid #dae4e4;border-radius:5px;overflow:hidden;background:white}.evidence-image img{width:100%;height:auto;display:block}.evidence-image .pin{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;display:grid;place-items:center;font:bold 17px/1 system-ui;color:white;background:#096965;border-radius:50%;border:2px solid white;box-shadow:0 0 0 1px #096965}.pin[aria-pressed=true],.pin:hover,.pin:focus-visible{background:#513282;outline:2px solid #7551a7;outline-offset:2px}.turn-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.turn-controls b{font:600 15px system-ui;margin-right:auto}.turn-controls button{border:1px solid #bacaca;background:white;padding:7px 12px;border-radius:5px;font:600 14px system-ui;color:var(--teal)}.turn-controls button:disabled{opacity:.4}.evidence-note{border-left:3px solid #36948c;padding:5px 10px;min-height:2.4em;font-size:15px}.policy-choices{display:flex;flex-wrap:wrap;gap:16px}.policy-choices label{cursor:pointer}.policy-choices input{accent-color:#006c67}.policy-score{color:#31595b;margin:5px 0;font:16px/1.45 Georgia,serif}.compare .fee{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0;font:14px var(--sans)}.fee input{accent-color:#08796e}.compare .fee[hidden]{display:none}@media(max-width:550px){.evidence-image .pin{width:24px;height:24px;font-size:13px}.turn-controls{gap:5px}.turn-controls b{width:100%}.explore .switch button{font-size:13px}.depth-plot .point text{font-size:19px}}@media(prefers-reduced-motion:reduce){.depth-plot .point{transition:none}}
+</style>
+
+<figure class="explore" id="paper-depth"><h3>Assay date and synthetic depth</h3>
+<div class="switch" role="group" aria-label="Horizontal axis"><button data-axis="date" aria-pressed="true">Recorded date</button><button data-axis="depth" aria-pressed="false">Synthetic depth</button></div>
+<svg class="depth-plot" role="img" aria-label="Measured RENIN potencies plotted against date or synthetic depth"></svg><div class="focus-readout" aria-live="polite"></div>
+<figcaption>Each dot is one of the 173 RENIN compounds with a known route cost. Switching axes changes only its horizontal position. <a href="preprint-assets/campaign-overview.png">Patent and assay overview</a></figcaption>
+<script type="application/json" class="plot-data">[{"id": "CPD_330", "date": "2008-02-18", "depth": 13, "pIC50": 7.508638306165727}, {"id": "CPD_100", "date": "2006-11-02", "depth": 8, "pIC50": 7.744727494896693}, {"id": "CPD_124", "date": "2006-11-28", "depth": 8, "pIC50": 6.09908693226233}, {"id": "CPD_203", "date": "2007-06-25", "depth": 11, "pIC50": 6.497572880015566}, {"id": "CPD_327", "date": "2008-02-07", "depth": 13, "pIC50": 8.221848749616356}, {"id": "CPD_225", "date": "2007-07-18", "depth": 11, "pIC50": 5.0}, {"id": "CPD_243", "date": "2007-08-15", "depth": 12, "pIC50": 8.522878745280337}, {"id": "CPD_109", "date": "2006-11-09", "depth": 8, "pIC50": 7.920818753952375}, {"id": "CPD_130", "date": "2006-12-19", "depth": 7, "pIC50": 6.557520230935551}, {"id": "CPD_93", "date": "2006-10-16", "depth": 8, "pIC50": 7.0655015487564325}, {"id": "CPD_218", "date": "2007-07-10", "depth": 9, "pIC50": 7.657577319177792}, {"id": "CPD_68", "date": "2006-08-24", "depth": 8, "pIC50": 6.628932137728262}, {"id": "CPD_326", "date": "2008-02-07", "depth": 13, "pIC50": 8.0}, {"id": "CPD_305", "date": "2007-12-11", "depth": 8, "pIC50": 8.221848749616356}, {"id": "CPD_122", "date": "2006-11-23", "depth": 9, "pIC50": 7.920818753952375}, {"id": "CPD_121", "date": "2006-11-22", "depth": 9, "pIC50": 6.939302159646387}, {"id": "CPD_158", "date": "2007-03-09", "depth": 8, "pIC50": 8.096910013008056}, {"id": "CPD_17", "date": "2006-04-12", "depth": 8, "pIC50": 7.200659450546417}, {"id": "CPD_176", "date": "2007-05-10", "depth": 9, "pIC50": 6.694648630553376}, {"id": "CPD_308", "date": "2007-12-13", "depth": 16, "pIC50": 8.096910013008056}, {"id": "CPD_320", "date": "2008-01-16", "depth": 13, "pIC50": 8.301029995663981}, {"id": "CPD_164", "date": "2007-04-11", "depth": 14, "pIC50": 8.221848749616356}, {"id": "CPD_92", "date": "2006-10-06", "depth": 8, "pIC50": 7.508638306165727}, {"id": "CPD_212", "date": "2007-07-03", "depth": 11, "pIC50": 7.823908740944318}, {"id": "CPD_216", "date": "2007-07-10", "depth": 8, "pIC50": 8.221848749616356}, {"id": "CPD_114", "date": "2006-11-17", "depth": 8, "pIC50": 7.356547323513812}, {"id": "CPD_104", "date": "2006-11-09", "depth": 8, "pIC50": 7.455931955649724}, {"id": "CPD_27", "date": "2006-05-02", "depth": 7, "pIC50": 5.815166666066646}, {"id": "CPD_246", "date": "2007-08-27", "depth": 8, "pIC50": 6.866461091629782}, {"id": "CPD_207", "date": "2007-06-26", "depth": 9, "pIC50": 7.30102999566398}, {"id": "CPD_74", "date": "2006-08-30", "depth": 8, "pIC50": 7.455931955649724}, {"id": "CPD_16", "date": "2006-04-12", "depth": 8, "pIC50": 7.2839966563652}, {"id": "CPD_229", "date": "2007-07-27", "depth": 11, "pIC50": 8.522878745280337}, {"id": "CPD_63", "date": "2006-08-23", "depth": 9, "pIC50": 5.737548910269569}, {"id": "CPD_197", "date": "2007-06-13", "depth": 9, "pIC50": 5.835647144215562}, {"id": "CPD_73", "date": "2006-08-30", "depth": 8, "pIC50": 6.2660007134616125}, {"id": "CPD_119", "date": "2006-11-21", "depth": 9, "pIC50": 6.297569463554474}, {"id": "CPD_251", "date": "2007-09-07", "depth": 10, "pIC50": 6.913640169325251}, {"id": "CPD_192", "date": "2007-06-06", "depth": 9, "pIC50": 8.522878745280337}, {"id": "CPD_177", "date": "2007-05-10", "depth": 9, "pIC50": 6.289882634888183}, {"id": "CPD_112", "date": "2006-11-09", "depth": 8, "pIC50": 6.27490547891853}, {"id": "CPD_153", "date": "2007-02-19", "depth": 8, "pIC50": 8.698970004336019}, {"id": "CPD_169", "date": "2007-04-20", "depth": 9, "pIC50": 8.096910013008056}, {"id": "CPD_115", "date": "2006-11-17", "depth": 8, "pIC50": 6.910094888560602}, {"id": "CPD_133", "date": "2006-12-20", "depth": 8, "pIC50": 6.8794260687941495}, {"id": "CPD_151", "date": "2007-02-19", "depth": 8, "pIC50": 8.397940008672036}, {"id": "CPD_239", "date": "2007-08-10", "depth": 9, "pIC50": 8.045757490560675}, {"id": "CPD_18", "date": "2006-04-12", "depth": 8, "pIC50": 6.111820506081674}, {"id": "CPD_244", "date": "2007-08-23", "depth": 9, "pIC50": 7.886056647693162}, {"id": "CPD_103", "date": "2006-11-08", "depth": 9, "pIC50": 6.603800652904263}, {"id": "CPD_123", "date": "2006-11-27", "depth": 9, "pIC50": 8.397940008672036}, {"id": "CPD_37", "date": "2006-06-21", "depth": 8, "pIC50": 5.823908740944319}, {"id": "CPD_128", "date": "2006-12-05", "depth": 8, "pIC50": 7.67778070526608}, {"id": "CPD_149", "date": "2007-02-19", "depth": 11, "pIC50": 5.178486471595226}, {"id": "CPD_331", "date": "2008-02-18", "depth": 13, "pIC50": 7.769551078621725}, {"id": "CPD_174", "date": "2007-05-10", "depth": 9, "pIC50": 7.259637310505756}, {"id": "CPD_195", "date": "2007-06-06", "depth": 8, "pIC50": 8.154901959985743}, {"id": "CPD_99", "date": "2006-11-01", "depth": 9, "pIC50": 6.072116589669293}, {"id": "CPD_113", "date": "2006-11-17", "depth": 8, "pIC50": 7.267606240177031}, {"id": "CPD_215", "date": "2007-07-10", "depth": 9, "pIC50": 6.159893905543242}, {"id": "CPD_29", "date": "2006-06-19", "depth": 8, "pIC50": 5.752026733638193}, {"id": "CPD_231", "date": "2007-07-30", "depth": 12, "pIC50": 5.732828271596985}, {"id": "CPD_131", "date": "2006-12-19", "depth": 7, "pIC50": 6.978810700930062}, {"id": "CPD_141", "date": "2007-01-10", "depth": 9, "pIC50": 6.289882634888183}, {"id": "CPD_19", "date": "2006-04-12", "depth": 8, "pIC50": 6.313363730737706}, {"id": "CPD_310", "date": "2007-12-17", "depth": 13, "pIC50": 8.397940008672036}, {"id": "CPD_67", "date": "2006-08-24", "depth": 8, "pIC50": 6.350665141287858}, {"id": "CPD_199", "date": "2007-06-14", "depth": 9, "pIC50": 7.853871964321761}, {"id": "CPD_85", "date": "2006-09-27", "depth": 9, "pIC50": 5.434152181326482}, {"id": "CPD_135", "date": "2006-12-21", "depth": 9, "pIC50": 6.636388020107855}, {"id": "CPD_253", "date": "2007-09-17", "depth": 9, "pIC50": 6.950781977329818}, {"id": "CPD_334", "date": "2008-02-19", "depth": 13, "pIC50": 7.823908740944318}, {"id": "CPD_152", "date": "2007-02-19", "depth": 11, "pIC50": 6.226213555018807}, {"id": "CPD_116", "date": "2006-11-21", "depth": 9, "pIC50": 5.468521082957744}, {"id": "CPD_300", "date": "2007-12-07", "depth": 11, "pIC50": 8.522878745280337}, {"id": "CPD_64", "date": "2006-08-23", "depth": 9, "pIC50": 7.008773924307505}, {"id": "CPD_226", "date": "2007-07-27", "depth": 12, "pIC50": 6.661543506395394}, {"id": "CPD_136", "date": "2006-12-21", "depth": 9, "pIC50": 7.130768280269023}, {"id": "CPD_110", "date": "2006-11-09", "depth": 8, "pIC50": 5.619788758288393}, {"id": "CPD_321", "date": "2008-01-16", "depth": 13, "pIC50": 7.853871964321761}, {"id": "CPD_70", "date": "2006-08-24", "depth": 8, "pIC50": 7.958607314841775}, {"id": "CPD_285", "date": "2007-11-05", "depth": 10, "pIC50": 6.169411331314855}, {"id": "CPD_84", "date": "2006-09-27", "depth": 9, "pIC50": 6.306273051076352}, {"id": "CPD_297", "date": "2007-12-06", "depth": 13, "pIC50": 8.698970004336019}, {"id": "CPD_383", "date": "2008-04-15", "depth": 9, "pIC50": 6.4461169733561245}, {"id": "CPD_271", "date": "2007-10-23", "depth": 9, "pIC50": 8.698970004336019}, {"id": "CPD_247", "date": "2007-08-28", "depth": 10, "pIC50": 8.397940008672036}, {"id": "CPD_329", "date": "2008-02-18", "depth": 13, "pIC50": 7.420216403383189}, {"id": "CPD_202", "date": "2007-06-14", "depth": 9, "pIC50": 7.823908740944318}, {"id": "CPD_230", "date": "2007-07-30", "depth": 12, "pIC50": 6.730487055782083}, {"id": "CPD_221", "date": "2007-07-10", "depth": 11, "pIC50": 8.301029995663981}, {"id": "CPD_90", "date": "2006-10-05", "depth": 9, "pIC50": 7.619788758288393}, {"id": "CPD_96", "date": "2006-10-24", "depth": 8, "pIC50": 7.795880017344074}, {"id": "CPD_69", "date": "2006-08-24", "depth": 8, "pIC50": 7.795880017344074}, {"id": "CPD_220", "date": "2007-07-10", "depth": 9, "pIC50": 7.823908740944318}, {"id": "CPD_134", "date": "2006-12-20", "depth": 8, "pIC50": 6.774690718274137}, {"id": "CPD_33", "date": "2006-06-19", "depth": 8, "pIC50": 6.167491087293763}, {"id": "CPD_20", "date": "2006-04-24", "depth": 8, "pIC50": 7.040958607678906}, {"id": "CPD_236", "date": "2007-08-09", "depth": 11, "pIC50": 8.045757490560675}, {"id": "CPD_170", "date": "2007-04-20", "depth": 11, "pIC50": 5.221848749616356}, {"id": "CPD_30", "date": "2006-06-19", "depth": 8, "pIC50": 6.906578314837764}, {"id": "CPD_318", "date": "2008-01-09", "depth": 9, "pIC50": 8.221848749616356}, {"id": "CPD_89", "date": "2006-10-05", "depth": 9, "pIC50": 6.782516055786093}, {"id": "CPD_97", "date": "2006-11-01", "depth": 9, "pIC50": 6.742321425130815}, {"id": "CPD_173", "date": "2007-04-26", "depth": 8, "pIC50": 7.167491087293763}, {"id": "CPD_219", "date": "2007-07-10", "depth": 6, "pIC50": 8.154901959985743}, {"id": "CPD_165", "date": "2007-04-13", "depth": 9, "pIC50": 7.67778070526608}, {"id": "CPD_59", "date": "2006-08-04", "depth": 8, "pIC50": 8.301029995663981}, {"id": "CPD_217", "date": "2007-07-10", "depth": 9, "pIC50": 6.609064892896621}, {"id": "CPD_343", "date": "2008-02-26", "depth": 13, "pIC50": 7.292429823902062}, {"id": "CPD_87", "date": "2006-09-29", "depth": 8, "pIC50": 7.200659450546417}, {"id": "CPD_154", "date": "2007-02-19", "depth": 9, "pIC50": 7.619788758288393}, {"id": "CPD_223", "date": "2007-07-12", "depth": 9, "pIC50": 8.221848749616356}, {"id": "CPD_204", "date": "2007-06-25", "depth": 11, "pIC50": 6.286509456906057}, {"id": "CPD_296", "date": "2007-12-06", "depth": 7, "pIC50": 7.420216403383189}, {"id": "CPD_88", "date": "2006-10-05", "depth": 9, "pIC50": 6.402304814074487}, {"id": "CPD_11", "date": "2006-03-06", "depth": 8, "pIC50": 5.500312917381596}, {"id": "CPD_132", "date": "2006-12-20", "depth": 8, "pIC50": 7.522878745280337}, {"id": "CPD_41", "date": "2006-06-27", "depth": 8, "pIC50": 5.896196279044043}, {"id": "CPD_127", "date": "2006-11-28", "depth": 8, "pIC50": 6.638272163982406}, {"id": "CPD_211", "date": "2007-07-02", "depth": 12, "pIC50": 6.373659632624957}, {"id": "CPD_287", "date": "2007-11-05", "depth": 4, "pIC50": 7.769551078621725}, {"id": "CPD_232", "date": "2007-07-31", "depth": 11, "pIC50": 7.853871964321761}, {"id": "CPD_205", "date": "2007-06-25", "depth": 9, "pIC50": 7.468521082957744}, {"id": "CPD_242", "date": "2007-08-14", "depth": 9, "pIC50": 5.0}, {"id": "CPD_75", "date": "2006-09-05", "depth": 8, "pIC50": 7.0655015487564325}, {"id": "CPD_146", "date": "2007-01-29", "depth": 11, "pIC50": 7.214670164989232}, {"id": "CPD_150", "date": "2007-02-19", "depth": 11, "pIC50": 5.301029995663981}, {"id": "CPD_105", "date": "2006-11-09", "depth": 9, "pIC50": 6.970616222314789}, {"id": "CPD_35", "date": "2006-06-20", "depth": 8, "pIC50": 6.774690718274137}, {"id": "CPD_144", "date": "2007-01-22", "depth": 8, "pIC50": 7.744727494896693}, {"id": "CPD_166", "date": "2007-04-20", "depth": 11, "pIC50": 6.070070439915411}, {"id": "CPD_111", "date": "2006-11-09", "depth": 8, "pIC50": 5.8696662315049934}, {"id": "CPD_143", "date": "2007-01-22", "depth": 9, "pIC50": 8.096910013008056}, {"id": "CPD_83", "date": "2006-09-25", "depth": 9, "pIC50": 5.424812155072339}, {"id": "CPD_40", "date": "2006-06-27", "depth": 8, "pIC50": 5.045757490560675}, {"id": "CPD_91", "date": "2006-10-05", "depth": 8, "pIC50": 7.769551078621725}, {"id": "CPD_62", "date": "2006-08-08", "depth": 9, "pIC50": 6.756961951313706}, {"id": "CPD_214", "date": "2007-07-09", "depth": 9, "pIC50": 8.096910013008056}, {"id": "CPD_76", "date": "2006-09-05", "depth": 8, "pIC50": 6.913640169325251}, {"id": "CPD_77", "date": "2006-09-06", "depth": 9, "pIC50": 5.193141970481181}, {"id": "CPD_86", "date": "2006-09-28", "depth": 8, "pIC50": 7.522878745280337}, {"id": "CPD_142", "date": "2007-01-19", "depth": 9, "pIC50": 7.091514981121351}, {"id": "CPD_117", "date": "2006-11-21", "depth": 9, "pIC50": 6.027334407733888}, {"id": "CPD_31", "date": "2006-06-19", "depth": 8, "pIC50": 7.193820026016112}, {"id": "CPD_81", "date": "2006-09-18", "depth": 9, "pIC50": 6.118615343229427}, {"id": "CPD_156", "date": "2007-03-06", "depth": 11, "pIC50": 5.795880017344075}, {"id": "CPD_66", "date": "2006-08-23", "depth": 9, "pIC50": 5.2958494831602}, {"id": "CPD_278", "date": "2007-10-24", "depth": 10, "pIC50": 8.301029995663981}, {"id": "CPD_175", "date": "2007-05-10", "depth": 9, "pIC50": 6.508638306165727}, {"id": "CPD_167", "date": "2007-04-20", "depth": 11, "pIC50": 5.0}, {"id": "CPD_32", "date": "2006-06-19", "depth": 8, "pIC50": 6.283162276700475}, {"id": "CPD_98", "date": "2006-11-01", "depth": 9, "pIC50": 6.987162775294827}, {"id": "CPD_163", "date": "2007-04-11", "depth": 14, "pIC50": 5.330683119433887}, {"id": "CPD_49", "date": "2006-07-06", "depth": 8, "pIC50": 6.723538195826755}, {"id": "CPD_82", "date": "2006-09-21", "depth": 8, "pIC50": 7.1487416512809245}, {"id": "CPD_120", "date": "2006-11-22", "depth": 9, "pIC50": 6.2839966563652006}, {"id": "CPD_222", "date": "2007-07-12", "depth": 8, "pIC50": 8.096910013008056}, {"id": "CPD_52", "date": "2006-07-12", "depth": 8, "pIC50": 6.910094888560602}, {"id": "CPD_159", "date": "2007-03-28", "depth": 9, "pIC50": 8.154901959985743}, {"id": "CPD_303", "date": "2007-12-11", "depth": 15, "pIC50": 7.187086643357144}, {"id": "CPD_328", "date": "2008-02-18", "depth": 13, "pIC50": 7.67778070526608}, {"id": "CPD_2", "date": "2006-02-14", "depth": 8, "pIC50": 5.467245621007502}, {"id": "CPD_94", "date": "2006-10-16", "depth": 9, "pIC50": 7.0655015487564325}, {"id": "CPD_155", "date": "2007-03-06", "depth": 14, "pIC50": 8.221848749616356}, {"id": "CPD_206", "date": "2007-06-26", "depth": 9, "pIC50": 5.991399828238082}, {"id": "CPD_65", "date": "2006-08-23", "depth": 9, "pIC50": 6.892790030352131}, {"id": "CPD_48", "date": "2006-06-30", "depth": 8, "pIC50": 6.329754146925875}, {"id": "CPD_34", "date": "2006-06-20", "depth": 8, "pIC50": 6.215382707367125}, {"id": "CPD_118", "date": "2006-11-21", "depth": 9, "pIC50": 6.185086818724925}, {"id": "CPD_157", "date": "2007-03-06", "depth": 14, "pIC50": 4.88941028970075}, {"id": "CPD_270", "date": "2007-10-23", "depth": 9, "pIC50": 8.999999999999998}, {"id": "CPD_102", "date": "2006-11-08", "depth": 9, "pIC50": 7.244125144327508}]</script><script>
+(()=>{
+ const fig=document.currentScript.parentElement,svg=fig.querySelector('svg'),rows=JSON.parse(fig.querySelector('.plot-data').textContent);
+ const selected=['CPD_102','CPD_270'],date=d=>Date.parse(d+'T00:00:00Z');
+ let axis='date';
+ function draw(){
+  const w=Math.max(300,Math.round(fig.clientWidth)),h=218,left=41,right=w-44,top=21,bottom=h-33;
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  const days=rows.map(d=>date(d.date)),min=axis==='date'?Math.min(...days):3,max=axis==='date'?Math.max(...days):17;
+  const x=v=>left+(right-left)*(v-min)/(max-min),y=p=>bottom-(p-4)*(bottom-top)/5.25;
+  let frame='<g font-size="11" fill="#506672"><text x="3" y="12">pIC₅₀</text>';
+  for(const val of [5,6,7,8,9])frame+='<path d="M'+left+' '+y(val)+'H'+right+'" stroke="#e4ebeb"/><text x="23" y="'+(y(val)+4)+'">'+val+'</text>';
+  const ticks=axis==='depth'?[4,6,8,10,12,14,16].map(t=>[t,t]):[['2006-04-01','Apr 2006'],['2007-01-01','Jan 2007'],['2008-01-01','Jan 2008']].map(([d,t])=>[date(d),t]);
+  for(const [v,t] of ticks)frame+='<text x="'+x(v)+'" y="'+(bottom+20)+'" text-anchor="middle">'+t+'</text>';
+  if(!svg.firstElementChild){svg.innerHTML='<g class="ticks"></g>'+rows.map(d=>{const focus=selected.includes(d.id);return '<g class="point"><circle r="'+(focus?5:3)+'" fill="'+(focus?'#00796c':'#cbd8db')+'"/>'+(focus?'<text dy="'+(d.id==='CPD_270'?-9:17)+'" text-anchor="middle">'+d.id.replace('_',' ')+'</text>':'')+'</g>'}).join('')}
+  svg.firstElementChild.innerHTML=frame+'</g>';
+  rows.forEach((d,i)=>svg.children[i+1].style.transform='translate('+x(axis==='date'?date(d.date):d.depth)+'px,'+y(d.pIC50)+'px)');
+  fig.querySelector('.focus-readout').textContent=axis==='date'?'349 days apart · CPD 102 in November 2006, CPD 270 in October 2007.':'Both compounds have depth 9. The longest chain in each route has nine operations.';
+ }
+ fig.querySelectorAll('button').forEach(b=>b.onclick=()=>{axis=b.dataset.axis;fig.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',o===b));draw()});
+ draw();window.addEventListener('resize',draw);
+})();
+</script></figure>
+
+<p><strong>Synthetic depth</strong> counts the operations on the longest route from starting stock to a compound. If two fragments are made separately and then joined, both branches contribute to the total work. Only the longer branch determines the depth before the join. Compounds 102 and 270 both have depth nine, yet their experimental dates are 349 days apart.</p>
+</section>
+<section><h2>Estimating potency</h2>
+<p>The renin assay reports IC₅₀, the concentration that cuts enzyme activity in half. A lower IC₅₀ means a more potent inhibitor. The plots use pIC₅₀, a logarithmic scale on which 10 nM is 8 and 1 nM is 9.</p>
+<p>Our <strong>structure–activity relationship (SAR) model</strong> estimates a candidate’s potency by averaging the activities of similar compounds that the player has already tested. A new assay can change the estimate for several candidates.</p>
+<p><strong>Free energy perturbation (FEP)</strong> is a physics-based simulation method that estimates how a change in molecular structure affects binding to a target. In this replay, we simulate only the prediction error. We start with the candidate’s known experimental potency, hidden from the player, and add a random error on the log scale. For this kind of FEP calculation, the reference and candidate generally need to be structurally similar enough to match corresponding atoms and simulate the change from one molecule to the other. The replay uses the LoMap score as a practical test. A player can request a prediction when the pair’s score reaches the chosen cutoff. The LoMap score and difficulty setting determine the size of the assumed error. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3837551/">Lead Optimization Mapper</a></p>
+<p>A related proposal asks whether running FEP at the time would have changed which compound chemists made next. It proposes testing this first on Roche PDE10A and then on selected Sanofi series. <a href="https://www.researchhub.com/proposal/32993/would-fep-have-changed-the-med-chem-design-trajectory">Read the FEP proposal on ResearchHub</a></p>
+<figure class="model-lab" id="model-lab"><style>
+.model-lab{font:15px/1.45 var(--sans);border-block:1px solid #cdd9d8;padding:18px 0}.model-lab h3{margin:0 0 10px;font-size:21px}.model-lab h4{font:500 23px/1.2 Georgia,serif;margin:17px 0 8px}.lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center}.lab-controls{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.lab-controls label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:#435965}.lab-controls select{font:600 15px var(--sans);color:#19313d;border:1px solid #b9c9cd;background:white;padding:5px;border-radius:4px}.lab-eq{font:19px/1.55 Georgia,serif;background:#f2f6f5;padding:8px 12px;border-left:3px solid #39847c}.lab-eq small{display:block;font:13px/1.4 var(--sans);color:#4b6470}.lab-result{font-weight:650;color:#006b63}.weight-row{display:grid;grid-template-columns:62px 1fr 35px;gap:5px;align-items:center;font-size:12px}.weight-row i{display:block;background:#418c80;height:8px;border-radius:2px}.weight-row small{font-size:12px;text-align:right}.model-lab svg{width:100%;display:block}.lab-note{color:#526774;font-size:14px}.lab-plot{width:100%;max-width:330px;margin:auto}.model-lab figcaption{margin-top:10px}@media(max-width:620px){.lab-grid{grid-template-columns:1fr;gap:10px}.model-lab h4{font-size:21px}}
+</style>
+<h3>Potency estimates</h3><div class="switch" role="group" aria-label="Prediction model"><button type="button" data-model="sar" aria-pressed="true">SAR estimate</button><button type="button" data-model="fep" aria-pressed="false">FEP error</button></div>
+<div data-lab="sar"><h4>Weight of each measured compound</h4><div class="lab-grid"><div>
+<div class="lab-eq">p̂ = Σ(wᵢ pᵢ) / Σwᵢ <small>wᵢ = Tᵢ<sup>α</sup> + 10<sup>−8</sup></small></div>
+<div class="lab-controls"><label>RENIN candidate<select id="sar-target"><option>CPD 177</option><option>CPD 121</option></select></label><label>Neighbors (k)<select id="sar-k"><option>1</option><option>3</option><option selected>5</option><option>10</option></select></label><label>Exponent (α)<select id="sar-alpha"><option>0</option><option>1</option><option>2</option><option selected>4</option><option>8</option></select></label></div>
+<div class="lab-result" id="sar-result" aria-live="polite"></div></div>
+<div><b>Weight in the average</b><div id="weights"></div></div></div>
+<figcaption>The default model uses the five most similar compounds with known assays. The weight is the fingerprint similarity (T) raised to the fourth power, plus a small constant. Set α to zero to weight all five equally.</figcaption></div>
+<div data-lab="fep" hidden><h4>Predicted and measured ABL1 activity</h4><div class="lab-grid"><div>
+<div class="lab-eq">p̂ = p<sub>assay</sub> + z σ(s) / 1.36 <small>σ(s) = σ₀.₆ × [0.5 + 5(1 − s)] / 2.5 kcal/mol</small></div>
+<div class="lab-controls"><label>Min. LoMap score<select id="lab-cut"><option>0.60</option><option>0.70</option><option>0.80</option><option>0.90</option></select></label><label>Error at 0.60<select id="lab-error"><option value="ideal">Ideal · 0</option><option value="easy">Easy · 0.5</option><option value="medium" selected>Medium · 1</option><option value="hard">Hard · 2 kcal/mol</option></select></label></div>
+<div class="lab-result" id="fep-result" aria-live="polite"></div><p class="lab-note">Each dot is a prediction from the measured reference, Example 190. On the diagonal, predicted and measured activities agree.</p></div>
+<div class="lab-plot"><svg id="parity" viewBox="0 0 320 254" role="img" aria-label="Simulated versus measured pIC50 for eligible comparisons from Ex 190"></svg></div></div>
+<figcaption>A higher cutoff removes some pairs. A larger assumed error moves predictions farther from the diagonal. <details><summary>How the simulator adds error</summary>Here s is the LoMap score and σ₀.₆ is the assumed error standard deviation at s = 0.60. Each pair keeps the same random draw z from a standard normal distribution as you change the settings. At 298 K, 1.36 kcal/mol corresponds to one pIC₅₀ unit.</details></figcaption></div>
+<script type="application/json" id="model-inputs">{"neighbors": {"CPD 177": [{"name": "CPD 14", "p": 4.866461091629782, "t": 0.5522388059701493}, {"name": "CPD 2", "p": 5.467245621007502, "t": 0.5151515151515151}, {"name": "CPD 6", "p": 4.665546248849068, "t": 0.5151515151515151}, {"name": "CPD 4", "p": 4.822463500070137, "t": 0.5074626865671642}, {"name": "CPD 12", "p": 4.644931793651149, "t": 0.4861111111111111}, {"name": "CPD 3", "p": 4.669586226650809, "t": 0.4857142857142857}, {"name": "CPD 1", "p": 5.189767482004915, "t": 0.43661971830985913}, {"name": "CPD 5", "p": 4.500312917381596, "t": 0.43283582089552236}, {"name": "CPD 11", "p": 5.500312917381596, "t": 0.42028985507246375}, {"name": "CPD 7", "p": 5.525055664534612, "t": 0.39436619718309857}, {"name": "CPD 10", "p": 4.525055664534611, "t": 0.3698630136986301}, {"name": "CPD 13", "p": 4.462810773756355, "t": 0.3424657534246575}, {"name": "CPD 9", "p": 4.560667306169737, "t": 0.34210526315789475}, {"name": "CPD 0", "p": 4.142366014849992, "t": 0.32051282051282054}, {"name": "CPD 8", "p": 4.268814292366, "t": 0.3194444444444444}], "CPD 121": [{"name": "CPD 14", "p": 4.866461091629782, "t": 0.4444444444444444}, {"name": "CPD 4", "p": 4.822463500070137, "t": 0.44285714285714284}, {"name": "CPD 11", "p": 5.500312917381596, "t": 0.4411764705882353}, {"name": "CPD 5", "p": 4.500312917381596, "t": 0.43283582089552236}, {"name": "CPD 12", "p": 4.644931793651149, "t": 0.4266666666666667}, {"name": "CPD 2", "p": 5.467245621007502, "t": 0.4084507042253521}, {"name": "CPD 6", "p": 4.665546248849068, "t": 0.4084507042253521}, {"name": "CPD 3", "p": 4.669586226650809, "t": 0.40540540540540543}, {"name": "CPD 1", "p": 5.189767482004915, "t": 0.36}, {"name": "CPD 7", "p": 5.525055664534612, "t": 0.3561643835616438}, {"name": "CPD 10", "p": 4.525055664534611, "t": 0.28205128205128205}, {"name": "CPD 9", "p": 4.560667306169737, "t": 0.25925925925925924}, {"name": "CPD 13", "p": 4.462810773756355, "t": 0.2564102564102564}, {"name": "CPD 0", "p": 4.142366014849992, "t": 0.25609756097560976}, {"name": "CPD 8", "p": 4.268814292366, "t": 0.25}]}, "pairs": [{"name": "Ex 31", "p": 8.154901959985743, "score": 0.6703200460356392, "z": -1.8440517105920498}, {"name": "Ex 73", "p": 7.823908740944319, "score": 0.6703200460356392, "z": -1.2432632648129105}, {"name": "Ex 114", "p": 8.221848749616356, "score": 0.7046880897187134, "z": 0.23548546234234966}, {"name": "Ex 115", "p": 7.795880017344075, "score": 0.6376281516217733, "z": 0.3356514981501695}, {"name": "Ex 169", "p": 8.958607314841775, "score": 0.6703200460356392, "z": -0.725551974827535}, {"name": "Ex 171", "p": 8.397940008672037, "score": 0.6703200460356392, "z": 0.20416436777275973}, {"name": "Ex 174", "p": 8.522878745280337, "score": 0.7788007830714048, "z": -0.18368167612116207}, {"name": "Ex 175", "p": 9.301029995663981, "score": 0.9048374180359595, "z": -0.2926231359632533}, {"name": "Ex 176", "p": 7.958607314841775, "score": 0.6703200460356392, "z": -1.027933439321258}, {"name": "Ex 185", "p": 8.619788758288394, "score": 0.7408182206817178, "z": -2.0041293629826336}, {"name": "Ex 187", "p": 8.397940008672037, "score": 0.7408182206817179, "z": 0.07742276894380005}, {"name": "Ex 189", "p": 8.522878745280337, "score": 0.8607079764250578, "z": 1.0186967274471357}, {"name": "Ex 191", "p": 8.096910013008056, "score": 0.7408182206817179, "z": 1.0843080929287108}, {"name": "Ex 199", "p": 8.522878745280337, "score": 0.6376281516217733, "z": -0.4676697447157301}, {"name": "Ex 201", "p": 8.397940008672037, "score": 0.7408182206817178, "z": 0.3060811175846368}, {"name": "Ex 202", "p": 8.468521082957745, "score": 0.8607079764250578, "z": 1.5034799850374179}, {"name": "Ex 203", "p": 9.0, "score": 0.6376281516217732, "z": 0.9190246391897697}, {"name": "Ex 206", "p": 8.221848749616356, "score": 0.6703200460356393, "z": 0.04434106221949944}, {"name": "Ex 217", "p": 8.698970004336019, "score": 0.6065306597126334, "z": -0.5411550844818855}, {"name": "Ex 218", "p": 8.522878745280337, "score": 0.7046880897187134, "z": -0.6885038518380151}, {"name": "Ex 224", "p": 8.795880017344075, "score": 0.6376281516217733, "z": 0.13944426519881706}, {"name": "Ex 235", "p": 8.698970004336019, "score": 0.6376281516217733, "z": -1.840135068105896}, {"name": "Ex 247", "p": 8.721246399047171, "score": 0.6065306597126334, "z": 0.2722001887094804}, {"name": "Ex 266", "p": 8.154901959985743, "score": 0.6065306597126334, "z": 0.4605870958040068}, {"name": "Ex 267", "p": 8.886056647693163, "score": 0.7788007830714048, "z": 1.1096230629299122}]}</script><script>
+(()=>{
+function replayDefaults(target){
+ return {cut:target==='RENIN'?'0.80':'0.60',error:target==='ABL1'?'easy':'hard'};
+}
+const gameErrorScale={easy:.5,medium:1,hard:2};
+const kcalPerLogPotency=0.00198720425864*298.15*Math.LN10;
+const gameSigma=(score,difficulty)=>gameErrorScale[difficulty]*(.5+5*(1-score))/2.5;
+// A prepared molecular node represents one distinct, paid reaction output.
+function campaign(level, sigmaForScore = () => 0, {completeBatch=false}={}) {
+  const {order,products,rx,routes,stages}=level;
+  const index=new Map(order.map((id,i)=>[id,i]));
+  const best=Math.max(...order.map(id=>products[id].p));
+  const neighbors=Object.fromEntries(order.map(id=>[id,[]]));
+  for(const [a,b,score,z=0] of level.edges){
+    neighbors[a].push([b,score,z]);neighbors[b].push([a,score,-z]);
+  }
+  let stock=new Set(level.stock), forecasts=new Map(), history=[], lastSaving={};
+  const made=()=>order.filter(id=>stock.has(id));
+  const goal=()=>made().some(id=>products[id].p>=best-1e-8);
+  const remaining=id=>routes[id].filter(n=>!stock.has(n));
+  const price=id=>remaining(id).reduce((sum,n)=>sum+rx[n].cost,0);
+  const spent=()=>Array.from(stock).reduce((sum,n)=>sum+(rx[n]?.cost||0),0);
+  const sources=id=>neighbors[id].filter(([r])=>stock.has(r)).sort((a,b)=>b[1]-a[1]||index.get(a[0])-index.get(b[0]));
+  function eligibleFep(){
+    return order.filter(n=>!stock.has(n)&&!forecasts.has(n)&&sources(n).length);
+  }
+  function queryAll(){
+    const targets=eligibleFep(),batch=history.length;
+    if(goal())return [];
+    for(const n of targets){
+      if(!act('query',n,sources(n)[0][0]))throw Error('Ineligible FEP target');
+      history.at(-1).batch=batch;
+    }
+    return targets;
+  }
+  function sar(id){
+    const row=level.sim[index.get(id)], near=made().map(n=>[row[index.get(n)],n]).sort((a,b)=>b[0]-a[0]||index.get(a[1])-index.get(b[1])).slice(0,5);
+    let w=0,s=0; for(const [t,n] of near){const weight=t**4+1e-8;s+=weight*products[n].p;w+=weight;}
+    return {p:s/w,novelty:1-near[0][0]};
+  }
+  function rank(id,mode){
+    const {p,novelty}=sar(id);
+    return ((mode==='hybrid' && forecasts.has(id))?forecasts.get(id).p:p)+novelty-(mode==='sar'?0:.5*Math.log(Math.max(1,price(id))));
+  }
+  function act(type,id,parent){
+    if((!completeBatch&&goal())||stock.has(id))return false;
+    if(type==='query'){
+      if(!products[id]||forecasts.has(id))return false;
+      const link=sources(id).find(([n])=>n===parent);
+      if(!link)return false;
+      const [,score,z]=link, sigma=sigmaForScore(score);
+      const p=products[id].p + z*sigma/kcalPerLogPotency;
+      forecasts.set(id,{p,parent,score,sigma});history.push({type,id,parent});return true;
+    }
+    if(type==='make'?!products[id]:type==='prepare'?!stages[id]:true)return false;
+    const previous=Object.fromEntries(order.filter(n=>!stock.has(n)).map(n=>[n,price(n)]));
+    const ops=remaining(id),cost=price(id),prior=new Set(made());
+    for(const n of ops){if(rx[n].inputs.some(i=>rx[i]&&!stock.has(i)))throw Error('Unprepared input');stock.add(n);}
+    lastSaving=Object.fromEntries(Object.keys(previous).filter(n=>!stock.has(n)&&previous[n]>price(n)).map(n=>[n,previous[n]-price(n)]));
+    history.push({type,id,cost,assayed:made().filter(n=>!prior.has(n)),cheaper:Object.keys(lastSaving).length});return true;
+  }
+  return {eligibleFep,queryAll,made,goal,remaining,price,spent,sources,sar,rank,act,stock,forecasts,history,best,
+          savings:()=>lastSaving,name:id=>(products[id]?.name||stages[id]||'Intermediate '+id.slice(2))};
+}
+function rival(level,mode){
+  const sim=campaign(level);
+  while(!sim.goal()){
+    const pool=level.order.filter(id=>!sim.stock.has(id));
+    if(mode==='hybrid')for(const id of pool){const link=sim.sources(id)[0];if(link&&!sim.forecasts.has(id))sim.act('query',id,link[0]);}
+    const scores=pool.map(id=>[id,sim.rank(id,mode)]).sort((a,b)=>b[1]-a[1]);
+    if(!sim.act('make',scores[0][0]))throw Error('Illegal computer move');
+  }
+  return {steps:sim.spent(),queries:sim.forecasts.size};
+}
+
+const lab=document.querySelector('#model-lab'),data=JSON.parse(document.querySelector('#model-inputs').textContent),get=id=>lab.querySelector('#'+id);
+function sar(){
+ const rows=data.neighbors[get('sar-target').value].slice(0,+get('sar-k').value);
+ const w=rows.map(d=>d.t**Number(get('sar-alpha').value)+1e-8),total=w.reduce((a,b)=>a+b,0);
+ const p=rows.reduce((sum,d,i)=>sum+w[i]*d.p/total,0);
+ get('sar-result').textContent=p.toFixed(2)+' predicted pIC₅₀ · '+Math.round(10**(9-p)).toLocaleString('en-US')+' nM';
+ get('weights').innerHTML=rows.map((d,i)=>'<div class="weight-row" title="Tanimoto '+d.t.toFixed(3)+' · measured pIC50 '+d.p.toFixed(2)+'"><span>'+d.name+'</span><i style="width:'+100*w[i]/total+'%"></i><small>'+Math.round(100*w[i]/total)+'%</small></div>').join('');
+}
+function fep(){
+ const rows=data.pairs.filter(d=>d.score>=Number(get('lab-cut').value)),mode=get('lab-error').value;
+ const sigma=s=>mode==='ideal'?0:gameSigma(s,mode);
+ const predict=d=>d.p+d.z*sigma(d.score)/kcalPerLogPotency;
+ const bounds=data.pairs.flatMap(d=>[d.p,d.p+d.z*gameSigma(d.score,'hard')/kcalPerLogPotency]);
+ const lo=Math.floor(Math.min(...bounds)),hi=Math.ceil(Math.max(...bounds));
+ const x=p=>49+188*(p-lo)/(hi-lo),y=p=>208-188*(p-lo)/(hi-lo);
+ let svg='';for(let i=lo;i<=hi;i++){svg+='<path d="M49 '+y(i)+'h188 M'+x(i)+' 20v188" stroke="#e6eded" fill="none"/><g fill="#455d66" font-size="10"><text x="40" y="'+(y(i)+3)+'" text-anchor="end">'+i+'</text><text x="'+x(i)+'" y="223" text-anchor="middle">'+i+'</text></g>'}
+ svg+='<path d="M49 208L237 20" stroke="#798e94" stroke-dasharray="4 3"/>';
+ for(const d of rows){
+ const target=d.name==='Ex 175',p=predict(d);if(target){const a=sigma(d.score)/kcalPerLogPotency;svg+='<path stroke="#644398" d="M'+x(d.p)+' '+y(p-a)+'V'+y(p+a)+'"/>'}
+ svg+='<circle cx="'+x(d.p)+'" cy="'+y(p)+'" r="'+(target?5:3.5)+'" fill="'+(target?'#644398':'#158276')+'"><title>'+d.name+' · LoMap '+d.score.toFixed(3)+' · simulated '+p.toFixed(2)+' · measured '+d.p.toFixed(2)+'</title></circle>';
+ if(target)svg+='<text x="'+(x(d.p)+8)+'" y="'+(y(p)+4)+'" font-size="11" fill="#644398">Ex 175</text>';
+ }
+ get('parity').innerHTML=svg+'<g fill="#334f59" font-size="12" text-anchor="middle"><text x="143" y="243">Measured pIC₅₀</text><text transform="translate(15,114) rotate(-90)">Simulated FEP pIC₅₀</text></g>';
+ get('fep-result').textContent=rows.length+' of '+data.pairs.length+' links eligible · Ex 175 whisker ±1σ';
+}
+lab.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>{lab.querySelectorAll('[data-model]').forEach(o=>o.setAttribute('aria-pressed',o===b));lab.querySelectorAll('[data-lab]').forEach(d=>d.hidden=d.dataset.lab!==b.dataset.model)});
+lab.querySelectorAll('select').forEach(s=>s.onchange=s.closest('[data-lab]').dataset.lab==='sar'?sar:fep);sar();fep();
+})();
+</script></figure>
+
+</section>
+<section><h2>The rules of the replay</h2>
+<p>In reinforcement learning terms, the synthesis routes, assays and game rules form the <strong>environment</strong>. The player sees the structures, the material in stock, earlier results and the amount spent. The remaining assay results stay hidden, as do the errors in individual predictions. This makes the environment <em>partially observable</em>.</p>
+<p>The player can stock an intermediate, make and assay a compound, or request an FEP prediction. Each synthesis step costs one game dollar. Testing the finished compound is included. We assume each preparation leaves enough intermediate for later compounds. An FEP prediction also costs one dollar.</p>
+<p>A <strong>policy</strong> uses a candidate score to choose which compound to make next. A run succeeds when the player makes and tests the most potent compound in the set. At the default prices, <strong>total reward = −(synthesis steps paid + FEP queries bought)</strong>. All four policies pay for the steps they use, including those that rank candidates without a cost penalty.</p>
+
+<figure class="explore" id="paper-policy">
+<style>
+#paper-policy .policy-score{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 .3em;margin:7px 0 10px;padding:10px 12px;border-left:3px solid #298578;background:#f2f7f5;color:#19313d;font:clamp(18px,2.5vw,23px)/1.6 Georgia,serif}
+#paper-policy .policy-score span{white-space:nowrap}#paper-policy [hidden]{display:none}
+#paper-policy .policy-keys{margin:6px 0 12px}#paper-policy .policy-keys div{margin:3px 0}#paper-policy .policy-keys dt,#paper-policy .policy-keys dd{display:inline;margin:0}#paper-policy .policy-keys dt{font-weight:650}
+#paper-policy .worked-score{margin:0;font-variant-numeric:tabular-nums}#paper-policy .worked-score output{font-weight:650;color:#006b63}
+</style>
+<h3>Compound selection rules</h3>
+<div class="policy-choices"><label><input type="checkbox" name="predict" checked> Buy eligible FEP predictions</label><label><input type="checkbox" name="cost" checked> Favor cheaper syntheses</label></div>
+<div aria-live="polite"><div class="focus-readout"></div>
+<div class="policy-score"><span><i>S</i>(<i>c</i>) =</span><span>p̂<sub data-estimator>hybrid</sub>(<i>c</i>)</span><span>+ (1 − <i>T</i><sub>max</sub>(<i>c</i>))</span><span data-penalty>− ½ ln(max(1, <i>C</i>(<i>c</i>)))</span></div>
+<dl class="policy-keys">
+<div><dt>Potency.</dt> <dd data-est-note></dd></div>
+<div><dt>Novelty.</dt> <dd><i>T</i><sub>max</sub> is the highest Tanimoto fingerprint similarity between candidate <i>c</i> and any measured compound. A less similar candidate gets a larger bonus.</dd></div>
+<div data-cost-note><dt>Cost.</dt> <dd><i>C</i> counts the synthesis steps still needed from current stock. A one-step synthesis has zero penalty because ln(1) = 0.</dd></div>
+</dl>
+<p class="worked-score"><b>CPD 177, before synthesis.</b> <output></output></p><small>Opening RENIN estimates · FEP 78 nM · 9 remaining steps</small></div>
+<details><summary>How the policy selects a batch</summary><p>Rank all unmade compounds by <i>S</i>(<i>c</i>), highest first. Select the top two for RENIN or the top four for ABL1 and S1P1. After each synthesis, update the remaining step counts and choose the highest-scoring compound left in the batch. Potency and novelty stay fixed until the next batch.</p><a href="preprint-assets/policy-round.svg">Full round diagram</a></details>
+<script>
+(()=>{
+ const fig=document.currentScript.parentElement;
+ const starting=JSON.parse(document.getElementById('model-inputs').textContent).neighbors['CPD 177'].slice(0,5);
+ const weights=starting.map(n=>n.t**4+1e-8);
+ const sar=starting.reduce((s,n,i)=>s+n.p*weights[i],0)/weights.reduce((s,w)=>s+w,0);
+ const novelty=1-starting[0].t, fep=9-Math.log10(78), penalty=.5*Math.log(9);
+ function show(){
+  const predict=fig.querySelector('[name=predict]').checked, cost=fig.querySelector('[name=cost]').checked;
+  fig.querySelector('.focus-readout').textContent=predict?'FEP with SAR fallback'+(cost?' + cost':''):'SAR'+(cost?' + synthesis cost':' only');
+  fig.querySelector('[data-estimator]').textContent=predict?'hybrid':'SAR';
+  fig.querySelector('[data-est-note]').textContent=predict?'Use the purchased FEP estimate for this candidate if available. Otherwise use the SAR estimate. Both are in pIC₅₀ units for RENIN.':'Use the SAR estimate from measured neighbors, in pIC₅₀ units for RENIN.';
+  fig.querySelector('[data-penalty]').hidden=!cost;
+  fig.querySelector('[data-cost-note]').hidden=!cost;
+  const p=predict?fep:sar;
+  fig.querySelector('output').textContent=p.toFixed(3)+' + '+novelty.toFixed(3)+(cost?' − '+penalty.toFixed(3):'')+' ≈ '+(p+novelty-(cost?penalty:0)).toFixed(2);
+ }
+ fig.onchange=show;show();
+})();
+</script></figure>
+
+</section>
+<section><h2>The RENIN results</h2>
+<p>The agent bought FEP predictions for five compounds. The estimate of 78 nM moved compound 177 from 23rd to first. The figure follows it from that decision through the assay and shows where I5 enters the route. <a href="https://patents.google.com/patent/US8580813B2/en#:~:text=Step5%3A%204-%282-Chloro">Patent preparation of I5</a></p>
+
+<figure class="explore" id="paper-replay"><h3>Making compound 177</h3>
+<div class="turn-controls"><b data-scene></b><button type="button" data-back>← Back</button><button type="button" data-next></button></div>
+<div class="evidence-image"><img alt=""></div><div class="evidence-note" aria-live="polite"></div><figcaption>Hover or tap a numbered detail. <a data-enlarge>Enlarge figure</a></figcaption>
+<script>
+(()=>{
+ const fig=document.currentScript.parentElement,box=fig.querySelector('.evidence-image'),img=box.querySelector('img'),note=fig.querySelector('.evidence-note');
+ const scenes=[
+ ['Opening board','renin-board.png','Buy five predictions →','The player starts with 15 assay results and can buy five FEP predictions for $1 each.',[
+ [17,15,'Measured compounds supply the evidence for SAR and the references for FEP.'],[51,28,'The board shows three candidates here. This move buys predictions for all five eligible compounds.'],[79,72,'CPD 103, selected here, costs nine steps from opening stock.']]],
+ ['Candidate ranks','renin-ranks.png','Make & assay CPD 177 →','FEP predicts 78 nM for CPD 177. It now ranks first among 26 candidates.',[
+ [15,77,'SAR places CPD 177 at rank 23 of 26.'],[47,77,'Adding the current synthesis cost leaves it at rank 23.'],[78,23,'After the queries, the policy uses FEP where available. CPD 177 rises to rank 1.']]],
+ ['Assay & synthesis','renin-i5-step.svg','Check the inventory →','CPD 177 measured 513 nM. This reaction produced I5 during its nine-step synthesis.',[
+ [19,22,'The azaindole carboxylic acid supplies the acyl group.'],[40,24,'The unprotected piperazine nitrogen couples to the acid.'],[79,20,'The chlorine on I5 provides a site for substitution in a later step.']]],
+ ['Inventory after CPD 177','renin-squares.png','Jump to the winning assay →','I5 is in stock. CPD 121 costs two further steps and measures 115 nM.',[
+ [16,28,'The same I5 structure appears in the routes of multiple candidates.'],[55,28,'CPD 121 and CPD 177 share I5. Making I5 completed seven of the nine steps needed for CPD 121.'],[92,28,'A check means the compound is in stock. Each number counts the steps still needed.']]],
+ ['Later in the replay','renin-finish.png','Replay this decision ↺','Using CPD 239 as the FEP reference, the agent selects CPD 270. It takes two steps to make, and its assay gives 1 nM.',[
+ [70,20,'CPD 239 measured 9 nM. It qualifies as a reference for CPD 270 at the 0.80 LoMap cutoff.'],[82,10,'CPD 270 was recorded on 23 October 2007. The star marks the winning assay.'],[54,75,'Colored squares below the assays identify synthesis platforms. Purple dotted lines connect stock to the compounds it supplies.']]]
+ ];
+ let index=0,pin=null;function select(k){box.querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===k)));note.textContent=k===null?scenes[index][3]:scenes[index][4][k][2]}
+ function render(){
+  const [name,file,next]=scenes[index],url='preprint-assets/'+file;
+  pin=null;fig.querySelector('[data-scene]').textContent=(index+1)+' / '+scenes.length+' · '+name;img.src=url;img.alt=name+' in the default RENIN replay';fig.querySelector('[data-enlarge]').href=url;fig.querySelector('[data-next]').textContent=next;fig.querySelector('[data-back]').disabled=index===0;
+  box.querySelectorAll('button').forEach(b=>b.remove());scenes[index][4].forEach(([x,y,text],i)=>{const b=document.createElement('button');b.type='button';b.className='pin';b.style.left=x+'%';b.style.top=y+'%';b.textContent=i+1;b.setAttribute('aria-label','Detail '+(i+1)+'. '+text);box.append(b);
+  b.onpointerenter=e=>{if(e.pointerType!=='touch')select(i)};b.onpointerleave=()=>select(pin);b.onfocus=()=>select(i);b.onblur=()=>select(pin);b.onclick=()=>{pin=pin===i?null:i;select(pin)};b.onkeydown=e=>{if(e.key==='Escape'){pin=null;select(null)}}});
+  select(null);
+ }
+ fig.querySelector('[data-back]').onclick=()=>{if(index>0){index--;render()}};fig.querySelector('[data-next]').onclick=()=>{index=(index+1)%scenes.length;render()};render();
+})();
+</script></figure>
+
+<p>Later in the same run, compound 239 measured 9 nM. Compound 223 was already more potent at 6 nM. Compound 239 was useful because it gave the player a reference for predicting compound 270. Making 270 took two more steps. Its assay confirmed 1 nM.</p>
+<figure class="compare"><h3>Cost to reach the 1 nM RENIN compound</h3>
+<div class="switch" role="group" aria-label="Compare costs"><button data-metric="steps" type="button">Synthesis steps</button><button data-metric="spend" type="button">Total spend</button></div>
+<label class="fee" hidden>Game price per FEP query <input type="range" min="0" max="1" step="0.01" value="1" aria-label="Game price per FEP query"><output>$1.00</output></label>
+<div class="bars" aria-live="polite"><span>SAR + cost</span><div class="track" data-steps="21" data-spend="21"><i class="bar sar"></i><b class="value">21</b></div>
+<span>FEP with SAR fallback + cost</span><div class="track" data-steps="17" data-spend="42"><i class="bar"></i><b class="value">17</b></div></div>
+<figcaption><span class="cost-result" aria-live="polite"></span> · Default RENIN replay · LoMap ≥ 0.80 · Hard error</figcaption></figure>
+<p>The strategy using FEP reached compound 270 in 17 synthesis steps. The strategy using SAR and synthesis cost took 21. That saved <strong>19% of the synthesis work</strong>. Its 25 predictions brought the bill to <strong>$42</strong>, compared with <strong>$21</strong> for SAR and synthesis cost.</p>
+<p>We repeated the FEP run 101 times from the same starting stock, varying the prediction errors. The replay shows a run with the median total cost. Its closing chart shows the spread across runs.</p>
+</section>
+<section><h2>Reading the replay</h2>
+<p>Start with RENIN and use the right arrow or Play. Before each move, a slide explains the decision. Watch the left panel to see the agent act and the candidates change rank. On the right, follow the same move through the assay plot and synthesis inventory.</p>
+<figure class="replay-guide" aria-labelledby="guide-title">
+<h3 id="guide-title">One move in the RENIN replay</h3>
+<div class="replay-shot">
+ <img src="preprint-assets/renin-replay-guide.png" width="2000" height="1150" alt="Five FEP queries move compound 177 from rank 23 to rank 1. Its predicted activity appears as an open circle. The synthesis counter is still zero.">
+ <button style="--x:62.9%;--y:8%" data-help="guide-lomap" aria-label="1. Change the LoMap cutoff">1</button>
+ <button style="--x:74.2%;--y:8%" data-help="guide-error" aria-label="2. Change prediction difficulty">2</button>
+ <button style="--x:44%;--y:32%" data-help="guide-ranks" aria-label="3. Read the compound rankings">3</button>
+ <button style="--x:82%;--y:27%" data-help="guide-state" aria-label="4. Read the campaign state and costs">4</button>
+</div>
+<figcaption>After five predictions, compound 177 is the agent’s first choice. Its assay result is still hidden. Select a marker for details. <a href="preprint-assets/renin-replay-guide.png">Enlarge screenshot</a></figcaption>
+<div class="guide-keys">
+<details id="guide-lomap"><summary>1 · LoMap cutoff</summary><p>Change <b>LoMap ≥</b> in the top bar to replay the same strategy with a different set of allowed predictions. At 0.80, a pair scoring 0.79 is excluded and a pair scoring 0.81 qualifies, provided the agent has made and tested the reference. Raising the cutoff can leave more candidates to the SAR model.</p></details>
+<details id="guide-error"><summary>2 · Difficulty and FEP error</summary><p>Difficulty controls how much random error the game adds to a compound’s hidden log potency. At a pair score of 0.60 the error standard deviation is 0.5, 1 or 2 kcal/mol on Easy, Medium or Hard. At 0.80 it is 0.3, 0.6 or 1.2. At 1.00 it is 0.1, 0.2 or 0.4. The scale changes linearly between scores. Ideal uses zero error.</p><p>For the Hard run pictured here, a pair scoring 0.80 has a standard deviation of 1.2 kcal/mol. A draw can make a candidate look stronger or weaker. Each purchased prediction stays fixed for that run. This is an assumption for testing strategies. <a href="#model-lab">Try the error settings</a>.</p></details>
+<details id="guide-ranks"><summary>3 · Why the agent picks 177</summary><p>Follow the purple line across the left panel. Compound 177 ranks 23rd by SAR and 23rd after accounting for synthesis cost. With its FEP prediction, it ranks first. The structures below show the three leading candidates.</p></details>
+<details id="guide-state"><summary>4 · What the agent knows and spends</summary><p>Open circles show FEP predictions. Filled colored circles show compounds the agent has made and tested. The squares below represent groups of intermediates at the same synthetic depth. Select <b>Squares + retrosynthesis</b> to see which routes get cheaper as stock builds up. The counters above the plot track synthesis steps and FEP queries separately.</p></details>
+</div>
+</figure>
+<script>
+document.querySelector('.replay-guide a[href="#model-lab"]').onclick=()=>document.querySelector('#model-lab [data-model="fep"]').click();
+for(const pin of document.querySelectorAll('.replay-shot [data-help]')){
+ const details=document.getElementById(pin.dataset.help);
+ pin.setAttribute('aria-controls',details.id);
+ const sync=()=>pin.setAttribute('aria-expanded',String(details.open));
+ sync();details.addEventListener('toggle',sync);
+ pin.addEventListener('click',()=>{details.open=true;details.querySelector('summary').focus();});
+}
+</script>
+
+<p>To compare decisions, change <strong>Strategy</strong> in the top bar. The forward strategies start with the same inventory and can use only the results they have acquired. The hindsight control gets the winner’s identity at the start. Its FEP route takes the fewest eligible transformations and, among tied paths, the fewest additional synthesis steps.</p>
+<p>The closing chart compares what the four forward strategies spent to reach the winner. Switch between synthesis steps and total spend to see what the FEP queries cost. For noisy FEP, the dot marks the median and the whiskers span the middle half of 101 runs.</p>
+<p><a href="strategy_movie.html#RENIN">Play RENIN · 1 nM inhibitor</a> · <a href="strategy_movie.html#ABL1">Play ABL1 · Example 175</a> · <a href="strategy_movie.html#S1P1">Play S1P1 · 2 nM hit</a></p>
+</section>
+<section id="related-work"><h2>Related work</h2>
+<p>DrugGym modeled discovery as a sequence of design, synthesis, and testing decisions. It generated analogs from building blocks and used surrogate assays to evaluate them. RetroDMTA replayed industrial campaigns round by round using their measured activities and experimental dates. SAR Brain draws on the RENIN data from that work. <a href="https://doi.org/10.1101/2024.05.28.596296">DrugGym</a> · <a href="https://doi.org/10.1039/D5DD00387C">RetroDMTA</a></p>
+<p>SPARROW jointly selected compounds and synthetic routes, accounting for reactions shared within a batch. Cost-informed Bayesian optimization tracked how purchasing a reagent changed the cost of later reaction experiments. Active learning studies have also used FEP to prioritize compounds, and earlier RL work used reactions as actions in molecular design. <a href="https://doi.org/10.1038/s43588-024-00639-y">SPARROW</a> · <a href="https://doi.org/10.1039/D4DD00225C">Cost-informed Bayesian reaction optimization</a> · <a href="https://doi.org/10.1021/acs.jctc.5c00128">Active learning FEP</a> · <a href="https://arxiv.org/abs/2004.12485">Reinforcement learning for synthesis</a></p>
+<p>Among the studies we reviewed, we found no earlier environment that replays a measured campaign with both rules. Each assay can unlock new reference-based predictions, and intermediates retained from recorded preparations reduce the cost of future syntheses. This coupling lets us ask when a prediction is worth buying and when it is worth making a compound for what its route leaves on the shelf.</p>
+</section>
+</main><footer><strong>SAR Brain</strong><a href="RENIN_intro.html">RENIN slides</a><a href="ABL1_intro.html">ABL1 slides</a><a href="S1P1_intro.html">S1P1 slides</a></footer>
+<script>
+document.querySelectorAll('[data-world]').forEach(button=>button.onclick=()=>{
+ for(const choice of document.querySelectorAll('[data-world]')){
+  const selected=choice===button;
+  choice.setAttribute('aria-pressed',String(selected));
+  document.getElementById(choice.dataset.world).hidden=!selected;
+ }
+});
+const ablMap=document.querySelector('#world-example iframe');
+window.addEventListener('message',e=>{
+ if(e.source===ablMap.contentWindow&&e.data?.type==='abl-paper-height'&&Number.isFinite(e.data.height)&&e.data.height>100)ablMap.style.height=Math.min(1500,e.data.height+6)+'px';
+});
+const decision=document.getElementById('renin-decision');
+const turns=[
+ ['Unprepared','0 synthesis steps paid','Five FEP queries have been purchased. Both analogs still cost nine synthesis steps.'],
+ ['In stock','9 synthesis steps paid','CPD 177 measures 513 nM. Its route leaves I5 in stock.'],
+ ['In stock','11 synthesis steps paid','CPD 121 measures 115 nM after two more steps.']
+];
+decision.querySelectorAll('[data-turn]').forEach(button=>button.onclick=()=>{
+ const i=Number(button.dataset.turn);decision.dataset.step=i;
+ for(const b of decision.querySelectorAll('[data-turn]'))b.setAttribute('aria-pressed',String(b===button));
+ decision.querySelector('[data-stock]').textContent=turns[i][0];
+ decision.querySelector('[data-ledger]').textContent=turns[i][1];
+ decision.querySelector('[data-observation]').textContent=turns[i][2];
+ decision.querySelector('.new-square').textContent=i===2?'✓':'2';
+ decision.querySelector('[data-price-note]').textContent=i===2?'Made in 2 steps · 115 nM':'steps to make CPD 121';
+ decision.querySelector('.assay svg').setAttribute('aria-label',i?'FEP predicted 78 nM. The assay measured 513 nM.':'FEP predicts 78 nM. Awaiting assay.');
+});
+const chart=document.querySelector('.compare');
+const fee=chart.querySelector('.fee'),slider=fee.querySelector('input');
+function setMetric(metric){
+ const spending=metric==='spend', price=Number(slider.value);
+ const totals=spending?[21,17+25*price]:[21,17];
+ fee.hidden=!spending;fee.querySelector('output').textContent='$'+price.toFixed(2);
+ for(const button of chart.querySelectorAll('button'))button.setAttribute('aria-pressed',String(button.dataset.metric===metric));
+ chart.querySelectorAll('.track').forEach((track,i)=>{
+  const value=totals[i];
+  track.querySelector('.value').textContent=(spending?'$':'')+Number(value.toFixed(2));
+  track.querySelector('.bar').style.width='calc((100% - 5ch) * '+value/Math.max(...totals)+')';
+ });
+ chart.querySelector('.cost-result').textContent=spending?
+ 'Same moves, repriced. At $0.16 per query the two policies break even.':'Four fewer synthesis steps · 19% saved';
+}
+slider.oninput=()=>setMetric('spend');
+chart.querySelectorAll('button').forEach(button=>button.onclick=()=>setMetric(button.dataset.metric));
+setMetric('steps');
+</script></body></html>

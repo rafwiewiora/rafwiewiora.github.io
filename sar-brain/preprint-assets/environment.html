@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RENIN environment · SAR Brain</title><body style="margin:clamp(12px,4vw,48px)"><style>
+.env-map{--navy:#1d3442;--grey:#536b78;--purple:#7046a0;--green:#187258;--teal:#007c78;font:15px/1.35 system-ui,-apple-system,sans-serif;color:var(--navy);position:relative;max-width:980px;margin:0 auto;background:white}.env-map *{box-sizing:border-box}.env-map h4{margin:8px 0 16px;font:500 clamp(23px,3vw,31px)/1.15 Georgia,serif}.env-map button{appearance:none;cursor:help;font:inherit;color:inherit;background:none;border:0;border-radius:7px;padding:6px;text-align:center}.env-map button:hover,.env-map button:focus-visible,.env-map button[aria-expanded=true]{background:#f2f6f6;outline:2px solid #a4bdba;outline-offset:1px}.env-map b,.env-map small{display:block}.env-map small{font-size:13px;color:var(--grey)}.env-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.env-source svg{display:block;height:57px;width:100%;margin:0 auto 4px}.env-wire{display:block;width:100%;height:25px;color:#8a9ea6}.env-choose{display:block;margin:0 auto!important;padding:5px 18px!important;border:1px solid #b2c5c7!important;background:#f2f7f6!important;font-weight:700!important}.env-choose span{color:var(--teal)}.env-map .env-action{padding:10px 6px;border-top:3px solid var(--accent);border-radius:0 0 6px 6px;color:var(--accent)}.env-action>strong{display:block;font-size:17px}.env-action .env-mol{display:block;width:100%;height:115px;object-fit:contain;margin:auto}.env-action small{margin-top:3px}.env-out{display:flex;justify-content:center;align-items:center;gap:7px;font-weight:680;color:var(--navy);min-height:34px}.env-out em{font:700 20px/1.45 system-ui;padding:0 6px;background:#eeeaf2;color:var(--purple);border-radius:4px}.env-out .cost-before{background:#f2eee7;color:#795d3b}.env-out .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--green)}.env-mini{display:inline-block!important;width:31px!important;height:12px;vertical-align:middle}.env-ending{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;margin:0 auto;font-weight:630}.env-ending button{display:inline-flex;align-items:center;gap:6px}.env-ending svg{width:26px;height:26px}.env-ending button:last-child{color:var(--green)}.env-tip{position:fixed;z-index:150;max-width:min(290px,calc(100vw - 24px));padding:10px 13px;border:1px solid #b6c8c6;box-shadow:0 4px 18px #19313d22;background:white;color:#213c47;border-radius:6px;font:14px/1.4 system-ui;text-align:left;pointer-events:auto}.env-tip[hidden]{display:none}.env-caption{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid #d5dfe1;font:13px system-ui;color:var(--grey)}.env-caption a{color:#006b64}.env-map .env-pin{cursor:pointer}
+@media(max-width:570px){.env-three{gap:3px}.env-source svg{height:43px}.env-source b{font-size:13px}.env-map button{padding:4px 1px}.env-action>strong{font-size:13px;min-height:34px}.env-map .env-action{padding:7px 2px}.env-action .env-mol{height:67px}.env-out{font-size:13px;gap:3px}.env-out em{font-size:16px}.env-map small{font-size:11px}.env-ending{gap:7px;font-size:13px}.env-mini{width:19px!important}.env-map h4{margin-bottom:10px}}
+</style>
+<div class="env-map" aria-label="Medicinal chemistry decision loop">
+<h4>A turn in the RENIN campaign</h4>
+<div class="env-three">
+<button class="env-source" type="button" data-note="The patent lists structures, reagents and preparation steps. We connect routes where they use the same intermediate.">
+<svg aria-hidden="true" viewBox="0 0 130 60"><path fill="#f4f0f9" stroke="#806a9e" stroke-width="1.6" d="M38 3h45l11 11v42H38z M83 3v12h11"/><path fill="none" stroke="#74549a" stroke-width="2" d="m46 29 7-4 7 4v8l-7 4-7-4z M60 33h10l6-7h9m-15 7 6 8h9"/><path stroke="#ab9eb9" d="M47 47h23"/></svg><b>Patent routes</b></button>
+<button class="env-source" type="button" data-note="The archive supplies measured activities and, when available, experimental dates. You see the starting assays. Make and test another compound to see its result.">
+<svg aria-hidden="true" viewBox="0 0 130 60"><path d="M27 7v43h78" fill="none" stroke="#90a8a3" stroke-width="2"/><g fill="#378a6e"><circle cx="39" cy="38" r="4"/><circle cx="53" cy="34" r="4"/><circle cx="61" cy="41" r="4"/><circle cx="76" cy="22" r="4"/><circle cx="86" cy="27" r="4"/><circle cx="98" cy="12" r="4"/></g></svg><b>Measured assays</b></button>
+<button class="env-source" type="button" data-note="SAR uses fingerprint similarity to find compounds with related structures. FEP uses a separate set of links. A measured reference can be used when its link to the candidate meets the LoMap cutoff.">
+<svg aria-hidden="true" viewBox="0 0 130 60"><path d="m32 35 26-18 17 24 24-21M32 35l43 6M58 17l41 3" fill="none" stroke="#428f91" stroke-width="2" stroke-dasharray="4 3"/><g stroke="#137d79" stroke-width="2.4" fill="white"><circle cx="32" cy="35" r="5" fill="#16847c"/><circle cx="58" cy="17" r="5"/><circle cx="75" cy="41" r="5"/><circle cx="99" cy="20" r="5"/></g></svg><b>Model links</b></button>
+</div>
+<svg class="env-wire" aria-hidden="true" viewBox="0 0 600 25" preserveAspectRatio="none"><path d="M100 1v7q0 4 5 4h390q5 0 5-4V1 M300 1v21m-4-4 4 4 4-4" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke"/></svg>
+<button type="button" class="env-choose" data-note="You can see the structures, routes, stock, assay results, predictions and money spent so far. Activities for untested compounds and the errors in your predictions stay hidden."><span>● ○ ○</span> &nbsp; Choose a move</button>
+<svg class="env-wire" aria-hidden="true" viewBox="0 0 600 25" preserveAspectRatio="none"><path d="M300 1v21 M100 22v-8q0-4 5-4h390q5 0 5 4v8 M96 18l4 4 4-4m192 0 4 4 4-4m192 0 4 4 4-4" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke"/></svg>
+<div class="env-three">
+<button class="env-action" style="--accent:var(--purple)" type="button" data-note="Prepare I5 once and keep it in inventory. CPD 121 then needs only two further operations, down from nine. Making CPD 177 also stocks I5 along the way. The price counts each missing operation at one game dollar.">
+<strong>Stock an intermediate</strong><img class="env-mol" src="decision-i5.svg" alt="Structure of intermediate I5"><b>I5 on the shelf</b><div class="env-out"><em class="cost-before">9</em> → <em>2</em></div><small>steps to CPD 121</small></button>
+<button class="env-action" style="--accent:var(--green)" type="button" data-note="Make CPD 239 and its assay reveals 9 nM. Its route products remain in stock, SAR can use its measured value, and CPD 239 becomes a reference for eligible FEP comparisons. The assay is included in the synthesis cost.">
+<strong>Make &amp; assay</strong><img class="env-mol" src="decision-239.svg" alt="Structure of CPD 239"><b>CPD 239</b><div class="env-out"><i class="dot"></i> 9 nM</div><small>measured reference</small></button>
+<button class="env-action" style="--accent:var(--teal)" type="button" data-note="From measured CPD 239, the transformation to CPD 270 scores 0.861 and clears the 0.80 LoMap cutoff. A $1 query returns a simulated potency near 1 nM in this replay. The candidate becomes a reference only after its assay.">
+<strong>Query FEP</strong><img class="env-mol" src="decision-270.svg" alt="Structure of CPD 270"><b>CPD 239 ⇢ 270</b><div class="env-out"><svg class="env-mini" viewBox="0 0 31 12" aria-hidden="true"><path d="M2 6h27M2 2v8m27-8v8" stroke="#117f78"/><circle cx="15" cy="6" r="3.5" stroke="#117f78" fill="white"/></svg> ≈ 1 nM</div><small>predicted potency</small></button>
+</div>
+<svg class="env-wire" aria-hidden="true" viewBox="0 0 600 25" preserveAspectRatio="none"><path d="M100 1v6q0 4 5 4h390q5 0 5-4V1 M300 1v21m-4-4 4 4 4-4" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke"/></svg>
+<div class="env-ending"><button type="button" data-note="The simulator updates the ranks, remaining steps and FEP links. You keep the materials and results from earlier turns."><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M5 14a8 8 0 1 0 3-7L5 9m0-6v6h6" fill="none" stroke="#465f70" stroke-width="2"/></svg>Choose again</button><span>or</span><button type="button" data-note="A successful run ends when you test the most potent compound in the set. For RENIN that is CPD 270 at 1 nM. Compare runs by synthesis steps, FEP queries or total cost."><svg viewBox="0 0 26 26" aria-hidden="true"><path d="m13 2 3.1 6.4 7.1 1-5.1 5 1.2 7-6.3-3.3-6.3 3.3 1.2-7-5.1-5 7.1-1z" fill="#27805f"/></svg>Best compound assayed</button></div>
+<div class="env-caption"><span>Hover or tap a drawing for the rules.</span></div>
+<div class="env-tip" role="tooltip" hidden></div>
+</div>
+<script>
+(()=>{
+ const map=document.currentScript.previousElementSibling, tip=map.querySelector('.env-tip'), buttons=[...map.querySelectorAll('button[data-note]')];
+ let shown=null,pinned=null,timer;
+ function close(){clearTimeout(timer);shown=null;pinned=null;tip.hidden=true;buttons.forEach(b=>b.setAttribute('aria-expanded','false'))}
+ function position(){if(!shown)return;const r=shown.getBoundingClientRect(),t=tip.getBoundingClientRect();
+  const left=Math.max(8,Math.min(innerWidth-t.width-8,r.left+(r.width-t.width)/2));
+  const top=r.bottom+6+t.height<innerHeight?r.bottom+6:Math.max(8,r.top-t.height-6);
+  Object.assign(tip.style,{left:left+'px',top:top+'px'});
+ }
+ function show(b){clearTimeout(timer);shown=b;tip.textContent=b.dataset.note;tip.hidden=false;buttons.forEach(n=>n.setAttribute('aria-expanded',String(n===b)));position()}
+ function deferClose(){clearTimeout(timer);timer=setTimeout(()=>{if(!pinned&&!tip.matches(':hover')&&!shown?.matches(':hover,:focus-visible'))close()},140)}
+ for(const b of buttons){
+  b.setAttribute('aria-expanded','false');b.setAttribute('aria-description',b.dataset.note);
+  b.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'&&!pinned)show(b)});
+  b.addEventListener('pointerleave',deferClose);
+  b.addEventListener('focus',()=>{pinned=null;show(b)});b.addEventListener('blur',()=>{if(!pinned)deferClose()});
+  b.addEventListener('click',()=>{if(pinned===b){close();return}pinned=b;show(b)});
+ }
+ tip.addEventListener('pointerenter',()=>clearTimeout(timer));tip.addEventListener('pointerleave',deferClose);
+ document.addEventListener('pointerdown',e=>{if(e.target!==tip&&!buttons.some(b=>b.contains(e.target)))close()});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+ window.addEventListener('resize',position);window.addEventListener('scroll',()=>{if(shown&&!shown.getClientRects().length)close();else position()},{passive:true});
+})();
+</script>
+</body></html>
